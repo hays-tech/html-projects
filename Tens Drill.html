@@ -1,0 +1,384 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tens Drill</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column on graph paper. Setup, play, results and session summary swap in the same slot. */
+:root {
+  --paper: #F1F4F8;
+  --grid: #DCE3EC;
+  --ink: #13203A;
+  --ink-soft: #55637D;
+  --card: #FFFFFF;
+  --line: #C6D0DE;
+  --accent: #2F54EB;
+  --accent-ink: #FFFFFF;
+  --good: #12805C;
+  --bad: #C2410C;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0D1424; --grid: #18223A; --ink: #E8EDF7; --ink-soft: #94A1BB;
+    --card: #141D32; --line: #2B3857; --accent: #7C97FF; --accent-ink: #0D1424;
+    --good: #4ADE9F; --bad: #FB923C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0D1424; --grid: #18223A; --ink: #E8EDF7; --ink-soft: #94A1BB;
+  --card: #141D32; --line: #2B3857; --accent: #7C97FF; --accent-ink: #0D1424;
+  --good: #4ADE9F; --bad: #FB923C; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 20px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.screen { display: flex; flex-direction: column; gap: 16px; }
+
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+.brand .mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-family: var(--font-mono); font-size: 1.15rem; }
+
+h1, h2 { font-family: var(--font-display); letter-spacing: -0.02em; line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: 2.2rem; font-weight: 700; }
+h2 { font-size: 1.6rem; font-weight: 700; }
+p { margin: 0; }
+.lede { color: var(--ink-soft); max-width: 36ch; }
+.label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-soft); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; transition: border-color .15s; }
+.card.good { border-color: var(--good); }
+
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat .val { font-family: var(--font-mono); font-size: 1.9rem; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+.field { display: flex; flex-direction: column; gap: 10px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; padding: 11px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { border: 1px solid var(--line); background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: 0.95rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.custom { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.custom input { width: 76px; font-family: var(--font-mono); font-size: 1rem; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+
+.btn { font: inherit; font-weight: 600; border-radius: 10px; padding: 13px 18px; cursor: pointer; border: 1px solid transparent; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost { background: transparent; color: var(--ink-soft); padding-inline: 10px; }
+.btn.big { font-size: 1.1rem; padding: 16px 20px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+.row .grow { flex: 1 1 auto; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.tip { display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; color: var(--ink-soft); }
+.tip b { color: var(--ink); font-weight: 600; }
+
+/* play */
+.hud { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+.hud .big { font-family: var(--font-mono); font-size: 2.6rem; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.hud .right { text-align: right; }
+.pop { animation: pop .22s ease-out; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); color: var(--good); } 100% { transform: scale(1); } }
+.warn { color: var(--bad); }
+.track { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.fill { height: 100%; width: 100%; background: var(--accent); border-radius: 999px; }
+.fill.warn { background: var(--bad); }
+
+.q { font-family: var(--font-mono); font-weight: 500; font-size: clamp(2.8rem, 15vw, 4.2rem); line-height: 1; letter-spacing: -0.03em; display: flex; gap: 0.25em; align-items: baseline; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.q .x { color: var(--accent); }
+.answer { width: 100%; margin-top: 16px; font-family: var(--font-mono); font-size: 2.2rem; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); font-variant-numeric: tabular-nums; }
+.answer:focus { border-color: var(--accent); outline: none; }
+.shake { animation: shake .28s; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+.hint { margin-top: 10px; font-size: 0.85rem; color: var(--ink-soft); }
+
+/* results */
+.score-card { display: flex; flex-direction: column; gap: 6px; }
+.score-card .num { font-family: var(--font-mono); font-size: 4.4rem; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.verdict { font-weight: 600; }
+.verdict.best { color: var(--good); }
+.rounds { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rounds li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) 2.6rem; gap: 10px; align-items: center; font-size: 0.9rem; }
+.rounds .meta { color: var(--ink-soft); }
+.rounds .bar { height: 10px; border-radius: 3px; background: var(--line); position: relative; }
+.rounds .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--ink-soft); min-width: 3px; }
+.rounds li.best .bar i { background: var(--accent); }
+.rounds .n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) { .pop, .shake { animation: none; } .card { transition: none; } }
+</style>
+
+<main class="wrap">
+  <div class="brand"><span class="mark" aria-hidden="true">×</span>Tens Drill</div>
+
+  <!-- SETUP -->
+  <section id="setup" class="screen">
+    <h1>Multiply by tens, fast.</h1>
+    <p class="lede">Each question multiplies two numbers from 10 to 90 in steps of 10, like 20 × 90.</p>
+
+    <div id="stats" class="card stats" hidden>
+      <div class="stat"><span class="label">Best round</span><span class="val" id="sBest">0</span></div>
+      <div class="stat"><span class="label">Average</span><span class="val" id="sAvg">0</span></div>
+      <div class="stat"><span class="label">Rounds</span><span class="val" id="sCount">0</span></div>
+    </div>
+
+    <div class="card field">
+      <span class="label" id="modeLabel">Round type</span>
+      <div class="seg" role="group" aria-labelledby="modeLabel">
+        <button type="button" id="modeTimed" aria-pressed="true">Timed</button>
+        <button type="button" id="modeFree" aria-pressed="false">No timer</button>
+      </div>
+      <div id="timeField" class="field">
+        <span class="label">Seconds per round</span>
+        <div class="chips">
+          <button type="button" class="chip" data-secs="30" aria-pressed="false">30</button>
+          <button type="button" class="chip" data-secs="60" aria-pressed="true">60</button>
+          <button type="button" class="chip" data-secs="90" aria-pressed="false">90</button>
+          <button type="button" class="chip" data-secs="120" aria-pressed="false">120</button>
+          <label class="custom"><span class="label">Custom</span><input id="secs" type="number" inputmode="numeric" min="5" max="600" value="60"></label>
+        </div>
+      </div>
+      <p id="freeNote" class="hint" hidden>The round runs until you tap End round.</p>
+    </div>
+
+    <button type="button" id="startBtn" class="btn primary big">Start round</button>
+
+    <div class="tip">
+      <b>Shortcut</b>
+      <span>Multiply the tens digits, then add two zeros. For 20 × 90, 2 × 9 = 18, so the answer is 1800.</span>
+    </div>
+    <div><button type="button" id="endFromSetup" class="btn ghost" hidden>End session</button></div>
+  </section>
+
+  <!-- PLAY -->
+  <section id="play" class="screen" hidden>
+    <div class="hud">
+      <div><div class="label">Score</div><div class="big" id="score" aria-live="polite">0</div></div>
+      <div class="right"><div class="label" id="timeLabel">Seconds left</div><div class="big" id="time">60</div></div>
+    </div>
+    <div class="track" id="track"><div class="fill" id="fill"></div></div>
+
+    <div class="card" id="qcard">
+      <div class="q"><span id="qa">20</span><span class="x">×</span><span id="qb">90</span></div>
+      <input id="answer" class="answer" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Your answer" placeholder="?">
+      <p class="hint">The next question appears as soon as the answer is right.</p>
+    </div>
+
+    <div class="row">
+      <button type="button" id="skipBtn" class="btn secondary grow">Skip</button>
+      <button type="button" id="endBtn" class="btn ghost">End round</button>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" class="screen" hidden>
+    <div class="card score-card">
+      <span class="label" id="rLabel">Round score</span>
+      <span class="num" id="rScore">0</span>
+      <span class="verdict" id="rVerdict"></span>
+    </div>
+    <div class="card stats">
+      <div class="stat"><span class="label">Best round</span><span class="val" id="rBest">0</span></div>
+      <div class="stat"><span class="label">Average</span><span class="val" id="rAvg">0</span></div>
+      <div class="stat"><span class="label">Rounds</span><span class="val" id="rCount">0</span></div>
+    </div>
+    <div class="card field">
+      <span class="label">All rounds this session</span>
+      <ul class="rounds" id="rList"></ul>
+    </div>
+    <div class="row">
+      <button type="button" id="againBtn" class="btn primary big grow">Play again</button>
+      <button type="button" id="settingsBtn" class="btn secondary">Change settings</button>
+    </div>
+    <div><button type="button" id="endFromResults" class="btn ghost">End session</button></div>
+  </section>
+
+  <!-- SESSION ENDED -->
+  <section id="ended" class="screen" hidden>
+    <h2>Session finished</h2>
+    <div class="card stats">
+      <div class="stat"><span class="label">Best round</span><span class="val" id="eBest">0</span></div>
+      <div class="stat"><span class="label">Average</span><span class="val" id="eAvg">0</span></div>
+      <div class="stat"><span class="label">Rounds</span><span class="val" id="eCount">0</span></div>
+    </div>
+    <p class="lede" id="eTotal"></p>
+    <button type="button" id="newBtn" class="btn primary big">Start a new session</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = ['setup', 'play', 'results', 'ended'];
+  var st = { rounds: [], timed: true, secs: 60, score: 0, a: -1, b: -1, active: false, startedAt: 0, total: 0, timer: null };
+
+  function show(name) { screens.forEach(function (n) { $(n).hidden = n !== name; }); }
+  function fmtNum(x) { return String(Number(x.toFixed(1))); }
+  function fmtTime(s) { return s >= 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : String(s); }
+  function best() { return st.rounds.reduce(function (m, r) { return Math.max(m, r.score); }, 0); }
+  function avg() { return st.rounds.length ? st.rounds.reduce(function (s, r) { return s + r.score; }, 0) / st.rounds.length : 0; }
+
+  /* setup */
+  function syncChips() {
+    var v = parseInt($('secs').value, 10);
+    document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', String(parseInt(c.dataset.secs, 10) === v)); });
+  }
+  function setMode(timed) {
+    st.timed = timed;
+    $('modeTimed').setAttribute('aria-pressed', String(timed));
+    $('modeFree').setAttribute('aria-pressed', String(!timed));
+    $('timeField').hidden = !timed;
+    $('freeNote').hidden = timed;
+  }
+  function renderSetup() {
+    var any = st.rounds.length > 0;
+    $('stats').hidden = !any;
+    $('endFromSetup').hidden = !any;
+    if (any) { $('sBest').textContent = best(); $('sAvg').textContent = fmtNum(avg()); $('sCount').textContent = st.rounds.length; }
+    show('setup');
+  }
+  $('modeTimed').onclick = function () { setMode(true); };
+  $('modeFree').onclick = function () { setMode(false); };
+  document.querySelectorAll('.chip').forEach(function (c) {
+    c.onclick = function () { $('secs').value = c.dataset.secs; syncChips(); };
+  });
+  $('secs').addEventListener('input', syncChips);
+
+  /* play */
+  function rand10() { return (Math.floor(Math.random() * 9) + 1) * 10; }
+  function newQuestion() {
+    var a, b;
+    do { a = rand10(); b = rand10(); } while (a === st.a && b === st.b);
+    st.a = a; st.b = b;
+    $('qa').textContent = a; $('qb').textContent = b;
+    $('answer').value = '';
+    $('answer').focus();
+  }
+  function bump(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  function correct() {
+    st.score++;
+    $('score').textContent = st.score;
+    bump($('score'), 'pop');
+    $('qcard').classList.add('good');
+    setTimeout(function () { $('qcard').classList.remove('good'); }, 220);
+    newQuestion();
+  }
+  function tick() {
+    var rem = st.total - (Date.now() - st.startedAt);
+    if (rem <= 0) { finish(); return; }
+    var s = Math.ceil(rem / 1000);
+    $('time').textContent = fmtTime(s);
+    $('fill').style.width = (rem / st.total * 100) + '%';
+    var low = rem <= 5000;
+    $('time').classList.toggle('warn', low);
+    $('fill').classList.toggle('warn', low);
+  }
+  function startRound() {
+    var secs = parseInt($('secs').value, 10);
+    if (!(secs >= 5)) secs = 60;
+    if (secs > 600) secs = 600;
+    $('secs').value = secs; syncChips();
+    st.secs = secs; st.score = 0; st.a = -1; st.b = -1; st.active = true;
+    st.startedAt = Date.now(); st.total = secs * 1000;
+    $('score').textContent = '0';
+    $('track').hidden = !st.timed;
+    $('time').classList.remove('warn'); $('fill').classList.remove('warn');
+    $('fill').style.width = '100%';
+    $('timeLabel').textContent = st.timed ? 'Seconds left' : 'No timer';
+    $('time').textContent = st.timed ? fmtTime(secs) : '∞';
+    show('play');
+    newQuestion();
+    clearInterval(st.timer);
+    if (st.timed) st.timer = setInterval(tick, 100);
+  }
+  function finish() {
+    if (!st.active) return;
+    st.active = false;
+    clearInterval(st.timer);
+    var prevBest = best(), had = st.rounds.length > 0;
+    st.rounds.push({ score: st.score, secs: st.timed ? st.secs : null });
+    renderResults(prevBest, had);
+  }
+
+  $('answer').addEventListener('input', function () {
+    var el = $('answer');
+    var v = el.value.replace(/\D/g, '').slice(0, 5);
+    if (el.value !== v) el.value = v;
+    if (!st.active || v === '') return;
+    if (Number(v) === st.a * st.b) correct();
+  });
+  $('answer').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && $('answer').value !== '') {
+      bump($('qcard'), 'shake');
+      $('answer').value = '';
+    }
+  });
+  $('skipBtn').onclick = newQuestion;
+  $('endBtn').onclick = finish;
+
+  /* results */
+  function renderResults(prevBest, had) {
+    var last = st.rounds[st.rounds.length - 1];
+    $('rScore').textContent = last.score;
+    $('rLabel').textContent = 'Round ' + st.rounds.length + (last.secs ? ' · ' + last.secs + ' seconds' : ' · no timer');
+    var v = $('rVerdict');
+    v.classList.remove('best');
+    if (!had) { v.textContent = 'First round on the board.'; }
+    else if (last.score > prevBest) { v.textContent = 'New best round, up ' + (last.score - prevBest) + '.'; v.classList.add('best'); }
+    else if (last.score === prevBest) { v.textContent = 'Ties your best round.'; }
+    else { v.textContent = (prevBest - last.score) + ' short of your best.'; }
+    $('rBest').textContent = best();
+    $('rAvg').textContent = fmtNum(avg());
+    $('rCount').textContent = st.rounds.length;
+    var max = Math.max(best(), 1), b = best(), marked = false;
+    $('rList').innerHTML = st.rounds.map(function (r, i) {
+      var isBest = r.score === b && !marked;
+      if (isBest) marked = true;
+      return '<li class="' + (isBest ? 'best' : '') + '"><span class="meta">Round ' + (i + 1) + '</span>' +
+        '<span class="bar"><i style="width:' + (r.score / max * 100) + '%"></i></span>' +
+        '<span class="n">' + r.score + '</span></li>';
+    }).join('');
+    show('results');
+  }
+  $('againBtn').onclick = startRound;
+  $('settingsBtn').onclick = renderSetup;
+
+  /* session end */
+  function endSession() {
+    var total = st.rounds.reduce(function (s, r) { return s + r.score; }, 0);
+    $('eBest').textContent = best();
+    $('eAvg').textContent = fmtNum(avg());
+    $('eCount').textContent = st.rounds.length;
+    $('eTotal').textContent = st.rounds.length + (st.rounds.length === 1 ? ' round' : ' rounds') + ' played, ' + total + ' correct answers in all.';
+    show('ended');
+  }
+  $('endFromSetup').onclick = endSession;
+  $('endFromResults').onclick = endSession;
+  $('newBtn').onclick = function () { st.rounds = []; renderSetup(); };
+  $('startBtn').onclick = startRound;
+
+  syncChips();
+  renderSetup();
+})();
+</script>
+
+</body></html>
