@@ -1,0 +1,896 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>HSK Sentence Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: single centered column, a practice panel above a stats panel. */
+:root {
+  --ink: #243047;
+  --muted: #68758a;
+  --line: #dbe2ed;
+  --blue: #315cbb;
+  --pale: #eef3ff;
+  --green: #16794b;
+  --red: #b42318;
+  --bg: #f0f3f8;
+  --panel: #ffffff;
+  --answer-bg: #fafcff;
+  --answer-line: #cbd5e1;
+  --answer-tile-line: #b6c8fb;
+  --tile-shadow: #e2e8f0;
+  --placeholder: #94a3b8;
+  --stat-bg: #f3f6fa;
+  --good-bg: #e9f8ef;
+  --bad-bg: #fff0ef;
+  --focus: #93b4ff;
+  --on-blue: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e4eaf5;
+    --muted: #9aa8bf;
+    --line: #2c3850;
+    --blue: #5b84e6;
+    --pale: #1f2c4d;
+    --green: #5fd196;
+    --red: #ff8f84;
+    --bg: #0f1522;
+    --panel: #172033;
+    --answer-bg: #121a2b;
+    --answer-line: #3a4863;
+    --answer-tile-line: #3f5aa3;
+    --tile-shadow: #0c1220;
+    --placeholder: #6d7b93;
+    --stat-bg: #1c263b;
+    --good-bg: #12301f;
+    --bad-bg: #3a1a18;
+    --focus: #6f94f0;
+    --on-blue: #0f1522;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e4eaf5;
+  --muted: #9aa8bf;
+  --line: #2c3850;
+  --blue: #5b84e6;
+  --pale: #1f2c4d;
+  --green: #5fd196;
+  --red: #ff8f84;
+  --bg: #0f1522;
+  --panel: #172033;
+  --answer-bg: #121a2b;
+  --answer-line: #3a4863;
+  --answer-tile-line: #3f5aa3;
+  --tile-shadow: #0c1220;
+  --placeholder: #6d7b93;
+  --stat-bg: #1c263b;
+  --good-bg: #12301f;
+  --bad-bg: #3a1a18;
+  --focus: #6f94f0;
+  --on-blue: #0f1522;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, sans-serif;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px;
+}
+.app { max-width: 760px; margin: auto; }
+header, .row {
+  display: flex; justify-content: space-between;
+  align-items: center; gap: 10px; flex-wrap: wrap;
+}
+h1 { font-size: 1.35rem; margin: 0; }
+.muted { color: var(--muted); font-size: .9rem; }
+.panel {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 17px; padding: 15px; margin-top: 12px;
+}
+.pill {
+  border: 1px solid var(--line); border-radius: 99px;
+  padding: 6px 10px; font-size: .85rem;
+}
+.label {
+  color: var(--muted); font-size: .77rem;
+  text-transform: uppercase; letter-spacing: .08em;
+  font-weight: 750;
+}
+.prompt { font-size: 1.25rem; font-weight: 750; margin-top: 8px; }
+.pinyin { color: var(--muted); margin-top: 5px; min-height: 1.5em; }
+.answer {
+  min-height: 76px; display: flex; align-items: center;
+  flex-wrap: wrap; gap: 8px; padding: 11px;
+  margin-top: 14px; border: 2px dashed var(--answer-line);
+  border-radius: 13px; background: var(--answer-bg);
+}
+.placeholder { color: var(--placeholder); }
+.bank, .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+button {
+  cursor: pointer; font: inherit; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 11px; padding: 9px 12px;
+}
+button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); }
+button:disabled { opacity: .4; cursor: default; }
+.tile {
+  font-size: 25px; line-height: 1.3; padding: 7px 11px;
+  border-color: var(--answer-line); box-shadow: 0 1px 0 var(--tile-shadow);
+}
+.answer .tile {
+  font-size: 28px; background: var(--pale);
+  border-color: var(--answer-tile-line);
+}
+.primary { background: var(--blue); color: var(--on-blue); border-color: var(--blue); }
+.danger { color: var(--red); border-color: var(--red); }
+.feedback { margin-top: 12px; padding: 11px; border-radius: 11px; }
+.good { color: var(--green); background: var(--good-bg); }
+.bad { color: var(--red); background: var(--bad-bg); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat { background: var(--stat-bg); padding: 10px 5px; text-align: center; border-radius: 11px; min-width: 0; }
+.stat strong { display: block; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .75rem; color: var(--muted); }
+@media (max-width: 500px) {
+  .panel { padding: 12px; }
+  h1 { font-size: 1.15rem; }
+  .stats { gap: 5px; }
+  .stat { padding: 5px 2px; border-radius: 9px; }
+  .stat strong { font-size: 1rem; line-height: 1.2; }
+  .stat span { font-size: .6rem; line-height: 1.15; display: block; }
+  .stats-panel { padding: 8px; margin-top: 8px; }
+  .stats-panel .controls { gap: 5px; margin-top: 7px; flex-wrap: nowrap; }
+  .stats-panel .controls button { flex: 1 1 0; min-width: 0; padding: 7px 4px; font-size: .72rem; border-radius: 9px; white-space: normal; line-height: 1.15; }
+  .stats-panel .muted { font-size: .7rem; margin: 6px 0 0; }
+}
+</style>
+
+<main class="app">
+  <header>
+    <div>
+      <h1>HSK Sentence Studio</h1>
+      <div class="muted">Build Chinese sentences one tile at a time.</div>
+    </div>
+    <span class="pill" id="progress">Sentence 1 / 450</span>
+  </header>
+
+  <section class="panel">
+    <div class="row">
+      <span class="label">Translate into Chinese</span>
+      <label class="pill" for="pinyinToggle"><input id="pinyinToggle" type="checkbox" checked> Show pinyin</label>
+    </div>
+    <div class="prompt" id="english"></div>
+    <div class="pinyin" id="pinyin"></div>
+    <div class="answer" id="answer" aria-label="Your answer"></div>
+    <div class="bank" id="bank" aria-label="Word tiles"></div>
+    <div class="controls">
+      <button class="primary" id="check">Check answer</button>
+      <button id="undo">Undo</button>
+      <button id="clear">Clear</button>
+      <button id="hint">Hint</button>
+      <button id="speak" aria-label="Hear the whole sentence" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="vertical-align:-3px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg> Listen
+      </button>
+    </div>
+    <div id="feedback" aria-live="polite"></div>
+  </section>
+
+  <section class="panel stats-panel">
+    <div class="stats">
+      <div class="stat"><strong id="solved">0</strong><span>Solved</span></div>
+      <div class="stat"><strong id="accuracy">—</strong><span>First-try</span></div>
+      <div class="stat"><strong id="attempts">0</strong><span>Attempts</span></div>
+      <div class="stat"><strong id="missed">0</strong><span>Need review</span></div>
+    </div>
+    <div class="controls">
+      <button class="primary" id="next">Next →</button>
+      <button id="review">Review missed</button>
+      <button id="all">All</button>
+      <button id="reset">Reset</button>
+    </div>
+    <p class="muted" id="mode">Practice mode · All sentences</p>
+  </section>
+</main>
+
+<script>
+const data = [
+["My friend likes singing.", "我的朋友喜欢唱歌。", "Wǒ de péngyou xǐhuan chànggē.", ["我", "的", "朋友", "喜欢", "唱歌"]],
+["My mom doesn't like listening to songs.", "我的妈妈不喜欢听歌。", "Wǒ de māma bù xǐhuan tīng gē.", ["我", "的", "妈妈", "不", "喜欢", "听", "歌"]],
+["Although this piece of clothing is very cheap, it is very pretty.", "虽然这件衣服很便宜，但是很漂亮。", "Suīrán zhè jiàn yīfu hěn piányi, dànshì hěn piàoliang.", ["虽然", "这", "件", "衣服", "很", "便宜", "但是", "很", "漂亮"]],
+["Ducks like water.", "鸭子喜欢水。", "Yāzi xǐhuan shuǐ.", ["鸭子", "喜欢", "水"]],
+["He likes dogs the most.", "他最喜欢狗。", "Tā zuì xǐhuan gǒu.", ["他", "最", "喜欢", "狗"]],
+["It is very windy today.", "今天风很大。", "Jīntiān fēng hěn dà.", ["今天", "风", "很", "大"]],
+["Horses are very fast.", "马很快。", "Mǎ hěn kuài.", ["马", "很", "快"]],
+["She can't talk now.", "她现在不能说话。", "Tā xiànzài bù néng shuōhuà.", ["她", "现在", "不", "能", "说话"]],
+["Pigs like eating watermelon.", "猪喜欢吃西瓜。", "Zhū xǐhuan chī xīguā.", ["猪", "喜欢", "吃", "西瓜"]],
+["He has finished eating.", "他吃完了。", "Tā chī wán le.", ["他", "吃", "完", "了"]],
+["Tomorrow is Sunday.", "明天是星期日。", "Míngtiān shì xīngqī rì.", ["明天", "是", "星期", "日"]],
+["The door is open.", "门开着。", "Mén kāi zhe.", ["门", "开", "着"]],
+["I don't eat meat.", "我不吃肉。", "Wǒ bù chī ròu.", ["我", "不", "吃", "肉"]],
+["This cup is purple.", "这个杯子是紫的。", "Zhè gè bēizi shì zǐ de.", ["这", "个", "杯子", "是", "紫", "的"]],
+["I often go to the park.", "我常常去公园。", "Wǒ chángcháng qù gōngyuán.", ["我", "常常", "去", "公园"]],
+["When does the nurse arrive?", "护士什么时候到？", "Hùshi shénme shíhou dào?", ["护士", "什么", "时候", "到"]],
+["What color is that?", "那是什么颜色？", "Nà shì shénme yánsè?", ["那", "是", "什么", "颜色"]],
+["She is wearing red clothes.", "她穿红衣服。", "Tā chuān hóng yīfu.", ["她", "穿", "红", "衣服"]],
+["He travels with his dad.", "他和爸爸一起旅游。", "Tā hé bàba yìqǐ lǚyóu.", ["他", "和", "爸爸", "一起", "旅游"]],
+["The driver went to the classroom.", "司机去了教室。", "Sījī qù le jiàoshì.", ["司机", "去", "了", "教室"]],
+["There are a lot of flowers in the park.", "公园里有很多花。", "Gōngyuán lǐ yǒu hěn duō huā.", ["公园", "里", "有", "很", "多", "花"]],
+["The frog is very small.", "青蛙很小。", "Qīngwā hěn xiǎo.", ["青蛙", "很", "小"]],
+["His wife is a doctor.", "他的妻子是医生。", "Tā de qīzi shì yīshēng.", ["他", "的", "妻子", "是", "医生"]],
+["Rabbits are very cute.", "兔子很可爱。", "Tùzi hěn kě'ài.", ["兔子", "很", "可爱"]],
+["He wants to drink some milk.", "他想喝牛奶。", "Tā xiǎng hē niúnǎi.", ["他", "想", "喝", "牛奶"]],
+["Does he have time?", "他有时间吗？", "Tā yǒu shíjiān ma?", ["他", "有", "时间", "吗"]],
+["Because she is sick, she wants to rest.", "因为她生病了，所以她想休息。", "Yīnwèi tā shēngbìng le, suǒyǐ tā xiǎng xiūxi.", ["因为", "她", "生病", "了", "所以", "她", "想", "休息"]],
+["That is your chair.", "那是你的椅子。", "Nà shì nǐ de yǐzi.", ["那", "是", "你", "的", "椅子"]],
+["Bears like fish.", "熊喜欢鱼。", "Xióng xǐhuan yú.", ["熊", "喜欢", "鱼"]],
+["My head is very big.", "我的头很大。", "Wǒ de tóu hěn dà.", ["我", "的", "头", "很", "大"]],
+["He studied for two hours.", "他学习了两个小时。", "Tā xuéxí le liǎng gè xiǎoshí.", ["他", "学习", "了", "两", "个", "小时"]],
+["She's full now.", "她饱了。", "Tā bǎo le.", ["她", "饱", "了"]],
+["We aren't full.", "我们不饱。", "Wǒmen bù bǎo.", ["我们", "不", "饱"]],
+["I like birds.", "我喜欢鸟。", "Wǒ xǐhuan niǎo.", ["我", "喜欢", "鸟"]],
+["Can we go together?", "我们可以一起去吗？", "Wǒmen kěyǐ yìqǐ qù ma?", ["我们", "可以", "一起", "去", "吗"]],
+["There is a bed in the bedroom.", "卧室里有床。", "Wòshì lǐ yǒu chuáng.", ["卧室", "里", "有", "床"]],
+["The park is to the right of the school.", "公园在学校右边。", "Gōngyuán zài xuéxiào yòubian.", ["公园", "在", "学校", "右边"]],
+["I have eaten dumplings.", "我吃过饺子。", "Wǒ chī guo jiǎozi.", ["我", "吃", "过", "饺子"]],
+["He's hungry now.", "他饿了。", "Tā è le.", ["他", "饿", "了"]],
+["The driver goes to work in the morning.", "司机上午上班。", "Sījī shàngwǔ shàngbān.", ["司机", "上午", "上班"]],
+["Does the manager want to buy a watch?", "经理想买手表吗？", "Jīnglǐ xiǎng mǎi shǒubiǎo ma?", ["经理", "想", "买", "手表", "吗"]],
+["I get up at ten o'clock.", "我十点起床。", "Wǒ shí diǎn qǐchuáng.", ["我", "十", "点", "起床"]],
+["I love you.", "我爱你。", "Wǒ ài nǐ.", ["我", "爱", "你"]],
+["The doctor wants to go to a restaurant.", "医生想去饭馆。", "Yīshēng xiǎng qù fànguǎn.", ["医生", "想", "去", "饭馆"]],
+["Please take your medicine.", "请吃药。", "Qǐng chī yào.", ["请", "吃", "药"]],
+["Which cup do you like?", "你喜欢哪个杯子？", "Nǐ xǐhuan nǎ gè bēizi?", ["你", "喜欢", "哪", "个", "杯子"]],
+["Her nose is very pretty.", "她的鼻子很漂亮。", "Tā de bízi hěn piàoliang.", ["她", "的", "鼻子", "很", "漂亮"]],
+["This piece of clothing is black.", "这件衣服是黑的。", "Zhè jiàn yīfu shì hēi de.", ["这", "件", "衣服", "是", "黑", "的"]],
+["I'll go by myself.", "我自己去。", "Wǒ zìjǐ qù.", ["我", "自己", "去"]],
+["I want to rest on the weekend.", "周末我想休息。", "Zhōumò wǒ xiǎng xiūxi.", ["周末", "我", "想", "休息"]],
+["My younger sister doesn't like traveling.", "我的妹妹不喜欢旅游。", "Wǒ de mèimei bù xǐhuan lǚyóu.", ["我", "的", "妹妹", "不", "喜欢", "旅游"]],
+["How does she get to the supermarket?", "她怎么去超市？", "Tā zěnme qù chāoshì?", ["她", "怎么", "去", "超市"]],
+["The nurse wants to go to the store.", "护士想去商店。", "Hùshi xiǎng qù shāngdiàn.", ["护士", "想", "去", "商店"]],
+["How old is the manager?", "经理几岁了？", "Jīnglǐ jǐ suì le?", ["经理", "几", "岁", "了"]],
+["We like lions.", "我们喜欢狮子。", "Wǒmen xǐhuan shīzi.", ["我们", "喜欢", "狮子"]],
+["This winter is very cold.", "今年冬天很冷。", "Jīnnián dōngtiān hěn lěng.", ["今年", "冬天", "很", "冷"]],
+["Everyone is in the classroom.", "大家都在教室。", "Dàjiā dōu zài jiàoshì.", ["大家", "都", "在", "教室"]],
+["I have been to China twice.", "我去过中国两次。", "Wǒ qù guo Zhōngguó liǎng cì.", ["我", "去", "过", "中国", "两", "次"]],
+["He goes to work at eight o'clock.", "他八点上班。", "Tā bā diǎn shàngbān.", ["他", "八", "点", "上班"]],
+["He thinks this room is very big.", "他觉得这个房间很大。", "Tā juéde zhè gè fángjiān hěn dà.", ["他", "觉得", "这", "个", "房间", "很", "大"]],
+["I like tigers.", "我喜欢老虎。", "Wǒ xǐhuan lǎohǔ.", ["我", "喜欢", "老虎"]],
+["Where does the doctor live?", "医生住在哪儿？", "Yīshēng zhù zài nǎr?", ["医生", "住", "在", "哪儿"]],
+["How is this city?", "这个城市怎么样？", "Zhè gè chéngshì zěnmeyàng?", ["这", "个", "城市", "怎么样"]],
+["This watch is one hundred yuan.", "这个手表一百块。", "Zhè gè shǒubiǎo yì bǎi kuài.", ["这", "个", "手表", "一", "百", "块"]],
+["I go to the hospital every month.", "我每个月去医院。", "Wǒ měi gè yuè qù yīyuàn.", ["我", "每", "个", "月", "去", "医院"]],
+["She doesn't like snakes.", "她不喜欢蛇。", "Tā bù xǐhuan shé.", ["她", "不", "喜欢", "蛇"]],
+["There are five people in her family.", "她家有五个人。", "Tā jiā yǒu wǔ gè rén.", ["她", "家", "有", "五", "个", "人"]],
+["Because it is raining, she isn't going to the store.", "因为下雨，所以她不去商店。", "Yīnwèi xiàyǔ, suǒyǐ tā bú qù shāngdiàn.", ["因为", "下雨", "所以", "她", "不", "去", "商店"]],
+["We already ate an egg.", "我们已经吃了鸡蛋。", "Wǒmen yǐjīng chī le jīdàn.", ["我们", "已经", "吃", "了", "鸡蛋"]],
+["I'll take that one.", "我要那个。", "Wǒ yào nà gè.", ["我", "要", "那", "个"]],
+["Is the teacher thirsty?", "老师渴吗？", "Lǎoshī kě ma?", ["老师", "渴", "吗"]],
+["He and she are husband and wife.", "他和她是夫妻。", "Tā hé tā shì fūqī.", ["他", "和", "她", "是", "夫妻"]],
+["There is no fruit in the refrigerator.", "冰箱里没有水果。", "Bīngxiāng lǐ méiyǒu shuǐguǒ.", ["冰箱", "里", "没有", "水果"]],
+["He can come tomorrow.", "他明天能来。", "Tā míngtiān néng lái.", ["他", "明天", "能", "来"]],
+["There are few people today.", "今天人很少。", "Jīntiān rén hěn shǎo.", ["今天", "人", "很", "少"]],
+["It may rain tomorrow.", "明天可能下雨。", "Míngtiān kěnéng xiàyǔ.", ["明天", "可能", "下雨"]],
+["Can the driver play basketball?", "司机会打篮球吗？", "Sījī huì dǎ lánqiú ma?", ["司机", "会", "打篮球", "吗"]],
+["I have a lot of things to do.", "我有很多事情。", "Wǒ yǒu hěn duō shìqing.", ["我", "有", "很", "多", "事情"]],
+["Where is the elevator?", "电梯在哪儿？", "Diàntī zài nǎr?", ["电梯", "在", "哪儿"]],
+["Don't wait.", "别等。", "Bié děng.", ["别", "等"]],
+["The teacher bought a skirt.", "老师买了裙子。", "Lǎoshī mǎi le qúnzi.", ["老师", "买", "了", "裙子"]],
+["I can dance.", "我会跳舞。", "Wǒ huì tiàowǔ.", ["我", "会", "跳舞"]],
+["Thank you.", "谢谢您。", "Xièxie nín.", ["谢谢", "您"]],
+["This piece of clothing is pink.", "这件衣服是粉红的。", "Zhè jiàn yīfu shì fěnhóng de.", ["这", "件", "衣服", "是", "粉红", "的"]],
+["The doctor goes back to the United States.", "医生回美国。", "Yīshēng huí Měiguó.", ["医生", "回", "美国"]],
+["She can't sing.", "她不会唱歌。", "Tā bú huì chànggē.", ["她", "不", "会", "唱歌"]],
+["Waiter, please give me some water.", "服务员，请给我水。", "Fúwùyuán, qǐng gěi wǒ shuǐ.", ["服务员", "请", "给", "我", "水"]],
+["Please go right.", "请往右边走。", "Qǐng wǎng yòubian zǒu.", ["请", "往", "右边", "走"]],
+["The student isn't going to the train station.", "学生不去火车站。", "Xuésheng bú qù huǒchēzhàn.", ["学生", "不", "去", "火车站"]],
+["Are you a police officer?", "你是警察吗？", "Nǐ shì jǐngchá ma?", ["你", "是", "警察", "吗"]],
+["Sorry, teacher.", "对不起，老师。", "Duìbuqǐ, lǎoshī.", ["对不起", "老师"]],
+["The nurse can't swim.", "护士不会游泳。", "Hùshi bú huì yóuyǒng.", ["护士", "不", "会", "游泳"]],
+["He is my boyfriend.", "他是我的男朋友。", "Tā shì wǒ de nánpéngyou.", ["他", "是", "我", "的", "男朋友"]],
+["The manager goes back to China.", "经理回中国。", "Jīnglǐ huí Zhōngguó.", ["经理", "回", "中国"]],
+["We know now.", "我们知道了。", "Wǒmen zhīdào le.", ["我们", "知道", "了"]],
+["When does the teacher rest?", "老师什么时候休息？", "Lǎoshī shénme shíhou xiūxi?", ["老师", "什么", "时候", "休息"]],
+["I'm full now.", "我饱了。", "Wǒ bǎo le.", ["我", "饱", "了"]],
+["The driver isn't going to Japan.", "司机不去日本。", "Sījī bú qù Rìběn.", ["司机", "不", "去", "日本"]],
+["You already ate some beef.", "你已经吃了牛肉。", "Nǐ yǐjīng chī le niúròu.", ["你", "已经", "吃", "了", "牛肉"]],
+["I give my older sister a cup.", "我送姐姐一个杯子。", "Wǒ sòng jiějie yí gè bēizi.", ["我", "送", "姐姐", "一", "个", "杯子"]],
+["Does she like bread?", "她喜欢面包吗？", "Tā xǐhuan miànbāo ma?", ["她", "喜欢", "面包", "吗"]],
+["He doesn't have money.", "他没有钱。", "Tā méiyǒu qián.", ["他", "没有", "钱"]],
+["Please read this character.", "请读这个字。", "Qǐng dú zhè gè zì.", ["请", "读", "这", "个", "字"]],
+["The teacher doesn't want to buy a hat.", "老师不想买帽子。", "Lǎoshī bù xiǎng mǎi màozi.", ["老师", "不", "想", "买", "帽子"]],
+["This book is extremely expensive.", "这本书非常贵。", "Zhè běn shū fēicháng guì.", ["这", "本", "书", "非常", "贵"]],
+["He is wearing black pants.", "他穿黑裤子。", "Tā chuān hēi kùzi.", ["他", "穿", "黑", "裤子"]],
+["This is correct.", "这是对的。", "Zhè shì duì de.", ["这", "是", "对", "的"]],
+["I'm very hot.", "我很热。", "Wǒ hěn rè.", ["我", "很", "热"]],
+["This chair is white.", "这个椅子是白的。", "Zhè gè yǐzi shì bái de.", ["这", "个", "椅子", "是", "白", "的"]],
+["I like the sea.", "我喜欢海。", "Wǒ xǐhuan hǎi.", ["我", "喜欢", "海"]],
+["You drank some milk yesterday.", "昨天你喝了牛奶。", "Zuótiān nǐ hē le niúnǎi.", ["昨天", "你", "喝", "了", "牛奶"]],
+["He is laughing.", "他正在笑。", "Tā zhèngzài xiào.", ["他", "正在", "笑"]],
+["How many older sisters does the manager have?", "经理有几个姐姐？", "Jīnglǐ yǒu jǐ gè jiějie?", ["经理", "有", "几", "个", "姐姐"]],
+["My classmate wants to eat some noodles.", "我的同学想吃面条。", "Wǒ de tóngxué xiǎng chī miàntiáo.", ["我", "的", "同学", "想", "吃", "面条"]],
+["English is easier than Chinese.", "英语比汉语容易。", "Yīngyǔ bǐ Hànyǔ róngyì.", ["英语", "比", "汉语", "容易"]],
+["When does the manager rest?", "经理什么时候休息？", "Jīnglǐ shénme shíhou xiūxi?", ["经理", "什么", "时候", "休息"]],
+["I work during the day.", "我白天工作。", "Wǒ báitiān gōngzuò.", ["我", "白天", "工作"]],
+["Please walk straight ahead.", "请往前面走。", "Qǐng wǎng qiánmiàn zǒu.", ["请", "往", "前面", "走"]],
+["I like eating meat.", "我喜欢吃肉。", "Wǒ xǐhuan chī ròu.", ["我", "喜欢", "吃", "肉"]],
+["She rests in the bedroom.", "她在卧室休息。", "Tā zài wòshì xiūxi.", ["她", "在", "卧室", "休息"]],
+["What are you doing?", "你在做什么？", "Nǐ zài zuò shénme?", ["你", "在", "做", "什么"]],
+["Pandas are very cute.", "熊猫很可爱。", "Xióngmāo hěn kě'ài.", ["熊猫", "很", "可爱"]],
+["Wolves are very smart.", "狼很聪明。", "Láng hěn cōngming.", ["狼", "很", "聪明"]],
+["Which computer do you like?", "你喜欢哪个电脑？", "Nǐ xǐhuan nǎ gè diànnǎo?", ["你", "喜欢", "哪", "个", "电脑"]],
+["She is a female teacher.", "她是女老师。", "Tā shì nǚ lǎoshī.", ["她", "是", "女", "老师"]],
+["She comes from Japan.", "她从日本来。", "Tā cóng Rìběn lái.", ["她", "从", "日本", "来"]],
+["I know him.", "我认识他。", "Wǒ rènshi tā.", ["我", "认识", "他"]],
+["I go to sleep at nine o'clock.", "我九点睡觉。", "Wǒ jiǔ diǎn shuìjiào.", ["我", "九", "点", "睡觉"]],
+["How does he get to a restaurant?", "他怎么去饭馆？", "Tā zěnme qù fànguǎn?", ["他", "怎么", "去", "饭馆"]],
+["What day of the week is it tomorrow?", "明天星期几？", "Míngtiān xīngqī jǐ?", ["明天", "星期", "几"]],
+["We go to work at seven o'clock.", "我们七点上班。", "Wǒmen qī diǎn shàngbān.", ["我们", "七", "点", "上班"]],
+["I hope the weather is very good today.", "我希望今天天气很好。", "Wǒ xīwàng jīntiān tiānqì hěn hǎo.", ["我", "希望", "今天", "天气", "很", "好"]],
+["Monkeys are very smart.", "猴子很聪明。", "Hóuzi hěn cōngming.", ["猴子", "很", "聪明"]],
+["She calls her younger brother.", "她给弟弟打电话。", "Tā gěi dìdi dǎ diànhuà.", ["她", "给", "弟弟", "打电话"]],
+["Please give me some salt.", "请给我盐。", "Qǐng gěi wǒ yán.", ["请", "给", "我", "盐"]],
+["The weather is so good!", "天气太好了！", "Tiānqì tài hǎo le!", ["天气", "太", "好", "了"]],
+["She buys a gift for her dad.", "她给爸爸买一个礼物。", "Tā gěi bàba mǎi yí gè lǐwù.", ["她", "给", "爸爸", "买", "一", "个", "礼物"]],
+["Because she's tired, she wants to sleep.", "因为她很累，所以她想睡觉。", "Yīnwèi tā hěn lèi, suǒyǐ tā xiǎng shuìjiào.", ["因为", "她", "很", "累", "所以", "她", "想", "睡觉"]],
+["Please give me some sugar.", "请给我糖。", "Qǐng gěi wǒ táng.", ["请", "给", "我", "糖"]],
+["Everyone likes music.", "大家都喜欢音乐。", "Dàjiā dōu xǐhuan yīnyuè.", ["大家", "都", "喜欢", "音乐"]],
+["I like life in Beijing.", "我喜欢北京的生活。", "Wǒ xǐhuan Běijīng de shēnghuó.", ["我", "喜欢", "北京", "的", "生活"]],
+["I eat lunch at noon.", "中午我吃午饭。", "Zhōngwǔ wǒ chī wǔfàn.", ["中午", "我", "吃", "午饭"]],
+["I want to buy a ticket.", "我想买票。", "Wǒ xiǎng mǎi piào.", ["我", "想", "买", "票"]],
+["Does the doctor like cats?", "医生喜欢猫吗？", "Yīshēng xǐhuan māo ma?", ["医生", "喜欢", "猫", "吗"]],
+["What is he doing?", "他在做什么？", "Tā zài zuò shénme?", ["他", "在", "做", "什么"]],
+["The student can sing.", "学生会唱歌。", "Xuésheng huì chànggē.", ["学生", "会", "唱歌"]],
+["My grandfather doesn't like drinking cola.", "我的外公不喜欢喝可乐。", "Wǒ de wàigōng bù xǐhuan hē kělè.", ["我", "的", "外公", "不", "喜欢", "喝", "可乐"]],
+["I'm on my way.", "我在路上。", "Wǒ zài lù shàng.", ["我", "在", "路", "上"]],
+["The bank is closer than the supermarket.", "银行比超市近。", "Yínháng bǐ chāoshì jìn.", ["银行", "比", "超市", "近"]],
+["He is busy; however, he is happy.", "他很忙，然而他很高兴。", "Tā hěn máng, rán'ér tā hěn gāoxìng.", ["他", "很", "忙", "然而", "他", "很", "高兴"]],
+["These apples are delicious.", "这些苹果很好吃。", "Zhè xiē píngguǒ hěn hǎochī.", ["这", "些", "苹果", "很", "好吃"]],
+["Turtles are very slow.", "乌龟很慢。", "Wūguī hěn màn.", ["乌龟", "很", "慢"]],
+["Can you help me?", "你可以帮助我吗？", "Nǐ kěyǐ bāngzhù wǒ ma?", ["你", "可以", "帮助", "我", "吗"]],
+["Is she a police officer?", "她是警察吗？", "Tā shì jǐngchá ma?", ["她", "是", "警察", "吗"]],
+["You call your mom.", "你给妈妈打电话。", "Nǐ gěi māma dǎ diànhuà.", ["你", "给", "妈妈", "打电话"]],
+["I call my younger sister.", "我给妹妹打电话。", "Wǒ gěi mèimei dǎ diànhuà.", ["我", "给", "妹妹", "打电话"]],
+["The exam has started.", "考试开始了。", "Kǎoshì kāishǐ le.", ["考试", "开始", "了"]],
+["What is the date today?", "今天几号？", "Jīntiān jǐ hào?", ["今天", "几", "号"]],
+["The sun is very strong today.", "今天太阳很大。", "Jīntiān tàiyáng hěn dà.", ["今天", "太阳", "很", "大"]],
+["The nurse likes lamb.", "护士喜欢羊肉。", "Hùshi xǐhuan yángròu.", ["护士", "喜欢", "羊肉"]],
+["There is a TV in the living room.", "客厅里有电视。", "Kètīng lǐ yǒu diànshì.", ["客厅", "里", "有", "电视"]],
+["How many phones does she have?", "她有几个手机？", "Tā yǒu jǐ gè shǒujī?", ["她", "有", "几", "个", "手机"]],
+["He has arrived at the movie theater.", "他到电影院了。", "Tā dào diànyǐngyuàn le.", ["他", "到", "电影院", "了"]],
+["This piece of clothing is really new.", "这件衣服真新。", "Zhè jiàn yīfu zhēn xīn.", ["这", "件", "衣服", "真", "新"]],
+["You can't talk now.", "你现在不能说话。", "Nǐ xiànzài bù néng shuōhuà.", ["你", "现在", "不", "能", "说话"]],
+["This hat is orange.", "这个帽子是橙的。", "Zhè gè màozi shì chéng de.", ["这", "个", "帽子", "是", "橙", "的"]],
+["Does the teacher like summer?", "老师喜欢夏天吗？", "Lǎoshī xǐhuan xiàtiān ma?", ["老师", "喜欢", "夏天", "吗"]],
+["He didn't drink any beer yesterday.", "昨天他没有喝啤酒。", "Zuótiān tā méiyǒu hē píjiǔ.", ["昨天", "他", "没有", "喝", "啤酒"]],
+["There are five eggs in the refrigerator.", "冰箱里有五个鸡蛋。", "Bīngxiāng lǐ yǒu wǔ gè jīdàn.", ["冰箱", "里", "有", "五", "个", "鸡蛋"]],
+["My parents are both very busy.", "我的父母都很忙。", "Wǒ de fùmǔ dōu hěn máng.", ["我", "的", "父母", "都", "很", "忙"]],
+["She really likes tea.", "她很喜欢茶。", "Tā hěn xǐhuan chá.", ["她", "很", "喜欢", "茶"]],
+["Does the doctor want to make a phone call?", "医生想打电话吗？", "Yīshēng xiǎng dǎ diànhuà ma?", ["医生", "想", "打电话", "吗"]],
+["He flies to Beijing.", "他坐飞机去北京。", "Tā zuò fēijī qù Běijīng.", ["他", "坐", "飞机", "去", "北京"]],
+["Please answer my question.", "请回答我的问题。", "Qǐng huídá wǒ de wèntí.", ["请", "回答", "我", "的", "问题"]],
+["Can the student play soccer?", "学生会踢足球吗？", "Xuésheng huì tī zúqiú ma?", ["学生", "会", "踢足球", "吗"]],
+["This is my first lesson.", "这是我的第一课。", "Zhè shì wǒ de dìyī kè.", ["这", "是", "我", "的", "第一", "课"]],
+["Where is the restroom?", "厕所在哪儿？", "Cèsuǒ zài nǎr?", ["厕所", "在", "哪儿"]],
+["How is the weather today?", "今天天气怎么样？", "Jīntiān tiānqì zěnmeyàng?", ["今天", "天气", "怎么样"]],
+["And you?", "你呢？", "Nǐ ne?", ["你", "呢"]],
+["The driver washes clothes at home.", "司机在家洗衣服。", "Sījī zài jiā xǐ yīfu.", ["司机", "在", "家", "洗", "衣服"]],
+["I want to go shopping.", "我想买东西。", "Wǒ xiǎng mǎi dōngxi.", ["我", "想", "买", "东西"]],
+["He is looking for his phone.", "他在找手机。", "Tā zài zhǎo shǒujī.", ["他", "在", "找", "手机"]],
+["This is my mom.", "这是我的妈妈。", "Zhè shì wǒ de māma.", ["这", "是", "我", "的", "妈妈"]],
+["She has a son.", "她有一个儿子。", "Tā yǒu yí gè érzi.", ["她", "有", "一", "个", "儿子"]],
+["What time is it now?", "现在几点？", "Xiànzài jǐ diǎn?", ["现在", "几", "点"]],
+["The doctor wants to read a book.", "医生想看书。", "Yīshēng xiǎng kàn shū.", ["医生", "想", "看", "书"]],
+["He has arrived at the hotel.", "他到酒店了。", "Tā dào jiǔdiàn le.", ["他", "到", "酒店", "了"]],
+["I'll be there right away.", "我马上到。", "Wǒ mǎshàng dào.", ["我", "马上", "到"]],
+["Why do you study English?", "你为什么学习英语？", "Nǐ wèishénme xuéxí Yīngyǔ?", ["你", "为什么", "学习", "英语"]],
+["We also want to eat some watermelon.", "我们也想吃西瓜。", "Wǒmen yě xiǎng chī xīguā.", ["我们", "也", "想", "吃", "西瓜"]],
+["Why does the student study English?", "学生为什么学习英语？", "Xuésheng wèishénme xuéxí Yīngyǔ?", ["学生", "为什么", "学习", "英语"]],
+["You can have tea or coffee.", "你可以喝茶或者咖啡。", "Nǐ kěyǐ hē chá huòzhě kāfēi.", ["你", "可以", "喝", "茶", "或者", "咖啡"]],
+["We didn't buy shoes yesterday.", "昨天我们没有买鞋。", "Zuótiān wǒmen méiyǒu mǎi xié.", ["昨天", "我们", "没有", "买", "鞋"]],
+["I want to buy a pencil.", "我想买铅笔。", "Wǒ xiǎng mǎi qiānbǐ.", ["我", "想", "买", "铅笔"]],
+["Why do you study Chinese?", "你为什么学习汉语？", "Nǐ wèishénme xuéxí Hànyǔ?", ["你", "为什么", "学习", "汉语"]],
+["She has three books.", "她有三本书。", "Tā yǒu sān běn shū.", ["她", "有", "三", "本", "书"]],
+["If you are thirsty, you will drink water.", "如果你渴，你就喝水。", "Rúguǒ nǐ kě, nǐ jiù hē shuǐ.", ["如果", "你", "渴", "你", "就", "喝", "水"]],
+["I live on the third floor.", "我住在三楼。", "Wǒ zhù zài sān lóu.", ["我", "住", "在", "三", "楼"]],
+["You ate a tomato yesterday.", "昨天你吃了西红柿。", "Zuótiān nǐ chī le xīhóngshì.", ["昨天", "你", "吃", "了", "西红柿"]],
+["It will be sunny tomorrow.", "明天晴。", "Míngtiān qíng.", ["明天", "晴"]],
+["Is he a police officer?", "他是警察吗？", "Tā shì jǐngchá ma?", ["他", "是", "警察", "吗"]],
+["How many phones do you have?", "你有几个手机？", "Nǐ yǒu jǐ gè shǒujī?", ["你", "有", "几", "个", "手机"]],
+["What is this thing?", "这是什么东西？", "Zhè shì shénme dōngxi?", ["这", "是", "什么", "东西"]],
+["He has been working all along.", "他一直在工作。", "Tā yìzhí zài gōngzuò.", ["他", "一直", "在", "工作"]],
+["Is this your computer?", "这是你的电脑吗？", "Zhè shì nǐ de diànnǎo ma?", ["这", "是", "你", "的", "电脑", "吗"]],
+["Don't leave.", "别走。", "Bié zǒu.", ["别", "走"]],
+["The nurse is eating some beef.", "护士正在吃牛肉。", "Hùshi zhèngzài chī niúròu.", ["护士", "正在", "吃", "牛肉"]],
+["Butterflies are very pretty.", "蝴蝶很漂亮。", "Húdié hěn piàoliang.", ["蝴蝶", "很", "漂亮"]],
+["I don't have a bicycle.", "我没有自行车。", "Wǒ méiyǒu zìxíngchē.", ["我", "没有", "自行车"]],
+["We went to the hospital.", "我们去了医院。", "Wǒmen qù le yīyuàn.", ["我们", "去", "了", "医院"]],
+["Is this his umbrella?", "这是他的雨伞吗？", "Zhè shì tā de yǔsǎn ma?", ["这", "是", "他", "的", "雨伞", "吗"]],
+["Can the nurse sing?", "护士会唱歌吗？", "Hùshi huì chànggē ma?", ["护士", "会", "唱歌", "吗"]],
+["I'm coming to the United States.", "我来美国。", "Wǒ lái Měiguó.", ["我", "来", "美国"]],
+["He thinks English is very hard.", "他觉得英语很难。", "Tā juéde Yīngyǔ hěn nán.", ["他", "觉得", "英语", "很", "难"]],
+["Her face is very red.", "她的脸很红。", "Tā de liǎn hěn hóng.", ["她", "的", "脸", "很", "红"]],
+["We ate some chicken.", "我们吃了鸡肉。", "Wǒmen chī le jīròu.", ["我们", "吃", "了", "鸡肉"]],
+["The neighbor is watching a movie.", "邻居正在看电影。", "Línjū zhèngzài kàn diànyǐng.", ["邻居", "正在", "看", "电影"]],
+["Is the student hungry?", "学生饿吗？", "Xuésheng è ma?", ["学生", "饿", "吗"]],
+["The teacher is coming to Japan.", "老师来日本。", "Lǎoshī lái Rìběn.", ["老师", "来", "日本"]],
+["This computer is five thousand yuan.", "这个电脑五千块。", "Zhè gè diànnǎo wǔ qiān kuài.", ["这", "个", "电脑", "五", "千", "块"]],
+["She also wants to study English.", "她也想学习英语。", "Tā yě xiǎng xuéxí Yīngyǔ.", ["她", "也", "想", "学习", "英语"]],
+["Welcome, everyone.", "欢迎大家。", "Huānyíng dàjiā.", ["欢迎", "大家"]],
+["If you don't understand, ask the teacher.", "如果你不懂，就问老师。", "Rúguǒ nǐ bù dǒng, jiù wèn lǎoshī.", ["如果", "你", "不", "懂", "就", "问", "老师"]],
+["She can play soccer.", "她会踢足球。", "Tā huì tī zúqiú.", ["她", "会", "踢足球"]],
+["Her eyes are very pretty.", "她的眼睛很漂亮。", "Tā de yǎnjing hěn piàoliang.", ["她", "的", "眼睛", "很", "漂亮"]],
+["How is the weather tomorrow?", "明天天气怎么样？", "Míngtiān tiānqì zěnmeyàng?", ["明天", "天气", "怎么样"]],
+["I still want to eat.", "我还想吃。", "Wǒ hái xiǎng chī.", ["我", "还", "想", "吃"]],
+["You ate some lamb yesterday.", "昨天你吃了羊肉。", "Zuótiān nǐ chī le yángròu.", ["昨天", "你", "吃", "了", "羊肉"]],
+["I'm used to it now.", "我习惯了。", "Wǒ xíguàn le.", ["我", "习惯", "了"]],
+["Hello, where are you?", "喂，你在哪儿？", "Wéi, nǐ zài nǎr?", ["喂", "你", "在", "哪儿"]],
+["I'll take this one.", "我要这个。", "Wǒ yào zhè gè.", ["我", "要", "这", "个"]],
+["Is this her key?", "这是她的钥匙吗？", "Zhè shì tā de yàoshi ma?", ["这", "是", "她", "的", "钥匙", "吗"]],
+["You like fish the most.", "你最喜欢鱼。", "Nǐ zuì xǐhuan yú.", ["你", "最", "喜欢", "鱼"]],
+["The nurse goes home.", "护士回家。", "Hùshi huí jiā.", ["护士", "回", "家"]],
+["The teacher went to the airport.", "老师去了机场。", "Lǎoshī qù le jīchǎng.", ["老师", "去", "了", "机场"]],
+["The nurse is buying pants.", "护士正在买裤子。", "Hùshi zhèngzài mǎi kùzi.", ["护士", "正在", "买", "裤子"]],
+["What is the driver's name?", "司机叫什么名字？", "Sījī jiào shénme míngzi?", ["司机", "叫", "什么", "名字"]],
+["He drinks some water in the kitchen.", "他在厨房喝水。", "Tā zài chúfáng hē shuǐ.", ["他", "在", "厨房", "喝", "水"]],
+["The nurse read a newspaper.", "护士看了报纸。", "Hùshi kàn le bàozhǐ.", ["护士", "看", "了", "报纸"]],
+["The baby is sleeping.", "婴儿在睡觉。", "Yīng'ér zài shuìjiào.", ["婴儿", "在", "睡觉"]],
+["Is this your cup?", "这是你的杯子吗？", "Zhè shì nǐ de bēizi ma?", ["这", "是", "你", "的", "杯子", "吗"]],
+["Do you have a question?", "你有问题吗？", "Nǐ yǒu wèntí ma?", ["你", "有", "问题", "吗"]],
+["How much is this cake?", "这个蛋糕多少钱？", "Zhè gè dàngāo duōshao qián?", ["这", "个", "蛋糕", "多少", "钱"]],
+["My grandmother doesn't like dancing.", "我的外婆不喜欢跳舞。", "Wǒ de wàipó bù xǐhuan tiàowǔ.", ["我", "的", "外婆", "不", "喜欢", "跳舞"]],
+["My grandmother likes sleeping.", "我的奶奶喜欢睡觉。", "Wǒ de nǎinai xǐhuan shuìjiào.", ["我", "的", "奶奶", "喜欢", "睡觉"]],
+["She listens to music in the evening.", "她晚上听音乐。", "Tā wǎnshang tīng yīnyuè.", ["她", "晚上", "听", "音乐"]],
+["You don't have any questions.", "你没有问题。", "Nǐ méiyǒu wèntí.", ["你", "没有", "问题"]],
+["This bag is brown.", "这个包是棕的。", "Zhè gè bāo shì zōng de.", ["这", "个", "包", "是", "棕", "的"]],
+["You're right.", "你说得对。", "Nǐ shuō de duì.", ["你", "说", "得", "对"]],
+["Goodbye, teacher.", "再见，老师。", "Zàijiàn, lǎoshī.", ["再见", "老师"]],
+["His ears are very small.", "他的耳朵很小。", "Tā de ěrduo hěn xiǎo.", ["他", "的", "耳朵", "很", "小"]],
+["Does she want to work?", "她想工作吗？", "Tā xiǎng gōngzuò ma?", ["她", "想", "工作", "吗"]],
+["It doesn't matter.", "没关系。", "Méi guānxi.", ["没关系"]],
+["If I am tired, I will rest.", "如果我累，我就休息。", "Rúguǒ wǒ lèi, wǒ jiù xiūxi.", ["如果", "我", "累", "我", "就", "休息"]],
+["Please give me some chopsticks.", "请给我筷子。", "Qǐng gěi wǒ kuàizi.", ["请", "给", "我", "筷子"]],
+["How old is he?", "他几岁了？", "Tā jǐ suì le?", ["他", "几", "岁", "了"]],
+["Please say it again.", "请你再说。", "Qǐng nǐ zài shuō.", ["请", "你", "再", "说"]],
+["The United States is a big country.", "美国是一个大国家。", "Měiguó shì yí gè dà guójiā.", ["美国", "是", "一", "个", "大", "国家"]],
+["Is the student going to the train station?", "学生去火车站吗？", "Xuésheng qù huǒchēzhàn ma?", ["学生", "去", "火车站", "吗"]],
+["The neighbor likes horses.", "邻居喜欢马。", "Línjū xǐhuan mǎ.", ["邻居", "喜欢", "马"]],
+["What does this mean?", "这是什么意思？", "Zhè shì shénme yìsi?", ["这", "是", "什么", "意思"]],
+["Mice like bread.", "老鼠喜欢面包。", "Lǎoshǔ xǐhuan miànbāo.", ["老鼠", "喜欢", "面包"]],
+["It snows in winter.", "冬天下雪。", "Dōngtiān xià xuě.", ["冬天", "下", "雪"]],
+["Your child is very happy.", "你的孩子很高兴。", "Nǐ de háizi hěn gāoxìng.", ["你", "的", "孩子", "很", "高兴"]],
+["This question is very hard.", "这个题很难。", "Zhè gè tí hěn nán.", ["这", "个", "题", "很", "难"]],
+["I take the subway to the office.", "我坐地铁去公司。", "Wǒ zuò dìtiě qù gōngsī.", ["我", "坐", "地铁", "去", "公司"]],
+["Today is Tuesday.", "今天是星期二。", "Jīntiān shì xīngqī èr.", ["今天", "是", "星期", "二"]],
+["The office is farther than the school.", "公司比学校远。", "Gōngsī bǐ xuéxiào yuǎn.", ["公司", "比", "学校", "远"]],
+["I have one hundred and five yuan.", "我有一百零五块钱。", "Wǒ yǒu yì bǎi líng wǔ kuài qián.", ["我", "有", "一", "百", "零", "五", "块", "钱"]],
+["He doesn't have time.", "他没有时间。", "Tā méiyǒu shíjiān.", ["他", "没有", "时间"]],
+["This hat is blue.", "这个帽子是蓝的。", "Zhè gè màozi shì lán de.", ["这", "个", "帽子", "是", "蓝", "的"]],
+["I understand now.", "我懂了。", "Wǒ dǒng le.", ["我", "懂", "了"]],
+["That is his table.", "那是他的桌子。", "Nà shì tā de zhuōzi.", ["那", "是", "他", "的", "桌子"]],
+["I haven't eaten yet.", "我还没有吃。", "Wǒ hái méiyǒu chī.", ["我", "还", "没有", "吃"]],
+["Please open the door.", "请开门。", "Qǐng kāi mén.", ["请", "开", "门"]],
+["My uncle is going to China.", "我的叔叔去中国。", "Wǒ de shūshu qù Zhōngguó.", ["我", "的", "叔叔", "去", "中国"]],
+["We also want to run.", "我们也想跑步。", "Wǒmen yě xiǎng pǎobù.", ["我们", "也", "想", "跑步"]],
+["May I come in?", "我可以进吗？", "Wǒ kěyǐ jìn ma?", ["我", "可以", "进", "吗"]],
+["I like dragons.", "我喜欢龙。", "Wǒ xǐhuan lóng.", ["我", "喜欢", "龙"]],
+["Please let me in.", "请让我进。", "Qǐng ràng wǒ jìn.", ["请", "让", "我", "进"]],
+["She goes to Beijing every year.", "她每年去北京。", "Tā měi nián qù Běijīng.", ["她", "每", "年", "去", "北京"]],
+["The student can play basketball.", "学生会打篮球。", "Xuésheng huì dǎ lánqiú.", ["学生", "会", "打篮球"]],
+["There are four people in her family.", "她家有四个人。", "Tā jiā yǒu sì gè rén.", ["她", "家", "有", "四", "个", "人"]],
+["My grandfather is going to the supermarket.", "我的爷爷去超市。", "Wǒ de yéye qù chāoshì.", ["我", "的", "爷爷", "去", "超市"]],
+["Her mouth is very small.", "她的嘴很小。", "Tā de zuǐ hěn xiǎo.", ["她", "的", "嘴", "很", "小"]],
+["The window is very big.", "窗户很大。", "Chuānghu hěn dà.", ["窗户", "很", "大"]],
+["Chickens like eating rice.", "鸡喜欢吃米饭。", "Jī xǐhuan chī mǐfàn.", ["鸡", "喜欢", "吃", "米饭"]],
+["You have a son.", "你有一个儿子。", "Nǐ yǒu yí gè érzi.", ["你", "有", "一", "个", "儿子"]],
+["The store is behind the office.", "商店在公司后面。", "Shāngdiàn zài gōngsī hòumiàn.", ["商店", "在", "公司", "后面"]],
+["You don't want to write characters.", "你不想写字。", "Nǐ bù xiǎng xiě zì.", ["你", "不", "想", "写", "字"]],
+["I have WeChat.", "我有微信。", "Wǒ yǒu Wēixìn.", ["我", "有", "微信"]],
+["Happy birthday!", "生日快乐！", "Shēngrì kuàilè!", ["生日", "快乐"]],
+["Autumn is very pretty.", "秋天很漂亮。", "Qiūtiān hěn piàoliang.", ["秋天", "很", "漂亮"]],
+["I want to introduce my friend.", "我想介绍我的朋友。", "Wǒ xiǎng jièshào wǒ de péngyou.", ["我", "想", "介绍", "我", "的", "朋友"]],
+["He has a kind heart.", "他的心很好。", "Tā de xīn hěn hǎo.", ["他", "的", "心", "很", "好"]],
+["Let's have dinner together.", "我们一起吃晚饭吧。", "Wǒmen yìqǐ chī wǎnfàn ba.", ["我们", "一起", "吃", "晚饭", "吧"]],
+["He went to Japan last year.", "他去年去了日本。", "Tā qùnián qù le Rìběn.", ["他", "去年", "去", "了", "日本"]],
+["I want to buy medicine.", "我想买药。", "Wǒ xiǎng mǎi yào.", ["我", "想", "买", "药"]],
+["The teacher went to the library.", "老师去了图书馆。", "Lǎoshī qù le túshūguǎn.", ["老师", "去", "了", "图书馆"]],
+["Your dog is very small.", "你的狗很小。", "Nǐ de gǒu hěn xiǎo.", ["你", "的", "狗", "很", "小"]],
+["It is sunny today.", "今天晴。", "Jīntiān qíng.", ["今天", "晴"]],
+["You have arrived at the library.", "你到图书馆了。", "Nǐ dào túshūguǎn le.", ["你", "到", "图书馆", "了"]],
+["Exercise is very important.", "运动很重要。", "Yùndòng hěn zhòngyào.", ["运动", "很", "重要"]],
+["Hello!", "您好！", "Nín hǎo!", ["您", "好"]],
+["Let's begin.", "我们开始吧。", "Wǒmen kāishǐ ba.", ["我们", "开始", "吧"]],
+["She can swim.", "她会游泳。", "Tā huì yóuyǒng.", ["她", "会", "游泳"]],
+["Because the weather is very cold, you want to drink some coffee.", "因为天气很冷，所以你想喝咖啡。", "Yīnwèi tiānqì hěn lěng, suǒyǐ nǐ xiǎng hē kāfēi.", ["因为", "天气", "很", "冷", "所以", "你", "想", "喝", "咖啡"]],
+["I have a cold.", "我感冒了。", "Wǒ gǎnmào le.", ["我", "感冒", "了"]],
+["Can he speak Chinese?", "他会说汉语吗？", "Tā huì shuō Hànyǔ ma?", ["他", "会", "说", "汉语", "吗"]],
+["It is seven o'clock now.", "现在七点了。", "Xiànzài qī diǎn le.", ["现在", "七", "点", "了"]],
+["She has two older brothers.", "她有两个哥哥。", "Tā yǒu liǎng gè gēge.", ["她", "有", "两", "个", "哥哥"]],
+["There is an apple on the table.", "桌子上有一个苹果。", "Zhuōzi shàng yǒu yí gè píngguǒ.", ["桌子", "上", "有", "一", "个", "苹果"]],
+["There are a lot of cars on the street.", "马路上有很多汽车。", "Mǎlù shàng yǒu hěn duō qìchē.", ["马路", "上", "有", "很", "多", "汽车"]],
+["Is the nurse tired?", "护士累吗？", "Hùshi lèi ma?", ["护士", "累", "吗"]],
+["This cake is really delicious.", "这个蛋糕真好吃。", "Zhè gè dàngāo zhēn hǎochī.", ["这", "个", "蛋糕", "真", "好吃"]],
+["Health is very important.", "身体很重要。", "Shēntǐ hěn zhòngyào.", ["身体", "很", "重要"]],
+["This bag is red.", "这个包是红的。", "Zhè gè bāo shì hóng de.", ["这", "个", "包", "是", "红", "的"]],
+["I take a taxi to the airport.", "我坐出租车去机场。", "Wǒ zuò chūzūchē qù jīchǎng.", ["我", "坐", "出租车", "去", "机场"]],
+["How does the teacher get to the store?", "老师怎么去商店？", "Lǎoshī zěnme qù shāngdiàn?", ["老师", "怎么", "去", "商店"]],
+["I ate a lot, and my stomach is full.", "我吃了很多，肚子很饱。", "Wǒ chī le hěn duō, dùzi hěn bǎo.", ["我", "吃", "了", "很", "多", "肚子", "很", "饱"]],
+["He buys an umbrella for his friend.", "他给朋友买一个雨伞。", "Tā gěi péngyou mǎi yí gè yǔsǎn.", ["他", "给", "朋友", "买", "一", "个", "雨伞"]],
+["Sir, please sit down.", "先生，请坐。", "Xiānsheng, qǐng zuò.", ["先生", "请", "坐"]],
+["The neighbor watches TV in the living room.", "邻居在客厅看电视。", "Línjū zài kètīng kàn diànshì.", ["邻居", "在", "客厅", "看", "电视"]],
+["The teacher isn't going to the office.", "老师不去公司。", "Lǎoshī bú qù gōngsī.", ["老师", "不", "去", "公司"]],
+["The driver wants to listen to a story.", "司机想听故事。", "Sījī xiǎng tīng gùshi.", ["司机", "想", "听", "故事"]],
+["She has three daughters.", "她有三个女儿。", "Tā yǒu sān gè nǚ'ér.", ["她", "有", "三", "个", "女儿"]],
+["This is my girlfriend.", "这是我的女朋友。", "Zhè shì wǒ de nǚpéngyou.", ["这", "是", "我", "的", "女朋友"]],
+["Who wants to have some soup?", "谁想喝汤？", "Shéi xiǎng hē tāng?", ["谁", "想", "喝", "汤"]],
+["Please give me some bread.", "请给我面包。", "Qǐng gěi wǒ miànbāo.", ["请", "给", "我", "面包"]],
+["She isn't hot.", "她不热。", "Tā bú rè.", ["她", "不", "热"]],
+["This bag is gray.", "这个包是灰的。", "Zhè gè bāo shì huī de.", ["这", "个", "包", "是", "灰", "的"]],
+["There are six people in my family.", "我家有六个人。", "Wǒ jiā yǒu liù gè rén.", ["我", "家", "有", "六", "个", "人"]],
+["Don't tell others.", "别告诉别人。", "Bié gàosu biérén.", ["别", "告诉", "别人"]],
+["Because it is raining, he isn't going to the supermarket.", "因为下雨，所以他不去超市。", "Yīnwèi xiàyǔ, suǒyǐ tā bú qù chāoshì.", ["因为", "下雨", "所以", "他", "不", "去", "超市"]],
+["My younger brother likes playing soccer.", "我的弟弟喜欢踢足球。", "Wǒ de dìdi xǐhuan tī zúqiú.", ["我", "的", "弟弟", "喜欢", "踢足球"]],
+["I have a passport.", "我有护照。", "Wǒ yǒu hùzhào.", ["我", "有", "护照"]],
+["I have finished studying.", "我学习完了。", "Wǒ xuéxí wán le.", ["我", "学习", "完", "了"]],
+["My dad likes playing basketball.", "我的爸爸喜欢打篮球。", "Wǒ de bàba xǐhuan dǎ lánqiú.", ["我", "的", "爸爸", "喜欢", "打篮球"]],
+["Does she want to study Chinese?", "她想学习汉语吗？", "Tā xiǎng xuéxí Hànyǔ ma?", ["她", "想", "学习", "汉语", "吗"]],
+["The manager ate some seafood.", "经理吃了海鲜。", "Jīnglǐ chī le hǎixiān.", ["经理", "吃", "了", "海鲜"]],
+["This is my luggage.", "这是我的行李。", "Zhè shì wǒ de xíngli.", ["这", "是", "我", "的", "行李"]],
+["This car is green.", "这个汽车是绿的。", "Zhè gè qìchē shì lǜ de.", ["这", "个", "汽车", "是", "绿", "的"]],
+["You also want to swim.", "你也想游泳。", "Nǐ yě xiǎng yóuyǒng.", ["你", "也", "想", "游泳"]],
+["He likes monkeys.", "他喜欢猴子。", "Tā xǐhuan hóuzi.", ["他", "喜欢", "猴子"]],
+["The driver is eating a tomato.", "司机正在吃西红柿。", "Sījī zhèngzài chī xīhóngshì.", ["司机", "正在", "吃", "西红柿"]],
+["The driver wants to go to the classroom.", "司机想去教室。", "Sījī xiǎng qù jiàoshì.", ["司机", "想", "去", "教室"]],
+["The student gets up in the morning.", "学生早上起床。", "Xuésheng zǎoshang qǐchuáng.", ["学生", "早上", "起床"]],
+["The neighbor goes home.", "邻居回家。", "Línjū huí jiā.", ["邻居", "回", "家"]],
+["You can come tomorrow.", "你明天能来。", "Nǐ míngtiān néng lái.", ["你", "明天", "能", "来"]],
+["He's coming right away.", "他马上来。", "Tā mǎshàng lái.", ["他", "马上", "来"]],
+["Don't drink alcohol.", "别喝酒。", "Bié hē jiǔ.", ["别", "喝", "酒"]],
+["Hello!", "你好！", "Nǐ hǎo!", ["你", "好"]],
+["Does she like spring?", "她喜欢春天吗？", "Tā xǐhuan chūntiān ma?", ["她", "喜欢", "春天", "吗"]],
+["She thinks this apple is very sweet.", "她觉得这个苹果很甜。", "Tā juéde zhè gè píngguǒ hěn tián.", ["她", "觉得", "这", "个", "苹果", "很", "甜"]],
+["My classmate is very tall.", "我的同学很高。", "Wǒ de tóngxué hěn gāo.", ["我", "的", "同学", "很", "高"]],
+["The school is very close to my home.", "学校离我家很近。", "Xuéxiào lí wǒ jiā hěn jìn.", ["学校", "离", "我", "家", "很", "近"]],
+["The baby is very cute.", "婴儿很可爱。", "Yīng'ér hěn kě'ài.", ["婴儿", "很", "可爱"]],
+["How many children does the driver have?", "司机有几个孩子？", "Sījī yǒu jǐ gè háizi?", ["司机", "有", "几", "个", "孩子"]],
+["I like mountains.", "我喜欢山。", "Wǒ xǐhuan shān.", ["我", "喜欢", "山"]],
+["I have arrived at the airport.", "我到机场了。", "Wǒ dào jīchǎng le.", ["我", "到", "机场", "了"]],
+["She loves to smile.", "她很爱笑。", "Tā hěn ài xiào.", ["她", "很", "爱", "笑"]],
+["It was overcast yesterday.", "昨天阴。", "Zuótiān yīn.", ["昨天", "阴"]],
+["You give your younger brother a book.", "你送弟弟一本书。", "Nǐ sòng dìdi yì běn shū.", ["你", "送", "弟弟", "一", "本", "书"]],
+["He doesn't have any questions.", "他没有问题。", "Tā méiyǒu wèntí.", ["他", "没有", "问题"]],
+["He is a male teacher.", "他是男老师。", "Tā shì nán lǎoshī.", ["他", "是", "男", "老师"]],
+["Does the student have any money?", "学生有钱吗？", "Xuésheng yǒu qián ma?", ["学生", "有", "钱", "吗"]],
+["The supermarket is next to the hospital.", "超市在医院旁边。", "Chāoshì zài yīyuàn pángbiān.", ["超市", "在", "医院", "旁边"]],
+["I like sports.", "我喜欢运动。", "Wǒ xǐhuan yùndòng.", ["我", "喜欢", "运动"]],
+["This is wrong.", "这是错的。", "Zhè shì cuò de.", ["这", "是", "错", "的"]],
+["She thinks this dish is very spicy.", "她觉得这个菜很辣。", "Tā juéde zhè gè cài hěn là.", ["她", "觉得", "这", "个", "菜", "很", "辣"]],
+["My older sister likes bananas.", "我的姐姐喜欢香蕉。", "Wǒ de jiějie xǐhuan xiāngjiāo.", ["我", "的", "姐姐", "喜欢", "香蕉"]],
+["Please go left.", "请往左边走。", "Qǐng wǎng zuǒbian zǒu.", ["请", "往", "左边", "走"]],
+["There are a lot of trees in the park.", "公园里有很多树。", "Gōngyuán lǐ yǒu hěn duō shù.", ["公园", "里", "有", "很", "多", "树"]],
+["Please give me a bowl.", "请给我一个碗。", "Qǐng gěi wǒ yí gè wǎn.", ["请", "给", "我", "一", "个", "碗"]],
+["His legs are very long.", "他的腿很长。", "Tā de tuǐ hěn cháng.", ["他", "的", "腿", "很", "长"]],
+["The student is buying a gift.", "学生正在买礼物。", "Xuésheng zhèngzài mǎi lǐwù.", ["学生", "正在", "买", "礼物"]],
+["It is very cute.", "它很可爱。", "Tā hěn kě'ài.", ["它", "很", "可爱"]],
+["She buys a gift for her older brother.", "她给哥哥买一个礼物。", "Tā gěi gēge mǎi yí gè lǐwù.", ["她", "给", "哥哥", "买", "一", "个", "礼物"]],
+["The student eats rice at noon.", "学生中午吃米饭。", "Xuésheng zhōngwǔ chī mǐfàn.", ["学生", "中午", "吃", "米饭"]],
+["My hands are very dirty.", "我的手很脏。", "Wǒ de shǒu hěn zāng.", ["我", "的", "手", "很", "脏"]],
+["Although this hotel is very expensive, it is very clean.", "虽然这个酒店很贵，但是很干净。", "Suīrán zhè gè jiǔdiàn hěn guì, dànshì hěn gānjìng.", ["虽然", "这", "个", "酒店", "很", "贵", "但是", "很", "干净"]],
+["Don't tell him.", "别告诉他。", "Bié gàosu tā.", ["别", "告诉", "他"]],
+["The student bought glasses.", "学生买了眼镜。", "Xuésheng mǎi le yǎnjìng.", ["学生", "买", "了", "眼镜"]],
+["She takes the bus to school.", "她坐公共汽车去学校。", "Tā zuò gōnggòng qìchē qù xuéxiào.", ["她", "坐", "公共汽车", "去", "学校"]],
+["The hospital is to the left of the bank.", "医院在银行左边。", "Yīyuàn zài yínháng zuǒbian.", ["医院", "在", "银行", "左边"]],
+["We didn't buy a watch yesterday.", "昨天我们没有买手表。", "Zuótiān wǒmen méiyǒu mǎi shǒubiǎo.", ["昨天", "我们", "没有", "买", "手表"]],
+["I wrote it wrong.", "我写错了。", "Wǒ xiě cuò le.", ["我", "写", "错", "了"]],
+["There is a refrigerator in the kitchen.", "厨房里有冰箱。", "Chúfáng lǐ yǒu bīngxiāng.", ["厨房", "里", "有", "冰箱"]],
+["What is the student's name?", "学生叫什么名字？", "Xuésheng jiào shénme míngzi?", ["学生", "叫", "什么", "名字"]],
+["You can eat some fruit.", "你可以吃水果。", "Nǐ kěyǐ chī shuǐguǒ.", ["你", "可以", "吃", "水果"]],
+["Is the doctor going to the library?", "医生去图书馆吗？", "Yīshēng qù túshūguǎn ma?", ["医生", "去", "图书馆", "吗"]],
+["She really likes dumplings.", "她很喜欢饺子。", "Tā hěn xǐhuan jiǎozi.", ["她", "很", "喜欢", "饺子"]],
+["I'm getting ready to go to Beijing.", "我准备去北京。", "Wǒ zhǔnbèi qù Běijīng.", ["我", "准备", "去", "北京"]],
+["He is faster than me.", "他比我快。", "Tā bǐ wǒ kuài.", ["他", "比", "我", "快"]],
+["I want to look at a photo.", "我想看照片。", "Wǒ xiǎng kàn zhàopiàn.", ["我", "想", "看", "照片"]],
+["He already bought shoes.", "他已经买了鞋。", "Tā yǐjīng mǎi le xié.", ["他", "已经", "买", "了", "鞋"]],
+["My hair is very long.", "我的头发很长。", "Wǒ de tóufa hěn cháng.", ["我", "的", "头发", "很", "长"]],
+["The supermarket sells fruit and milk.", "超市卖水果和牛奶。", "Chāoshì mài shuǐguǒ hé niúnǎi.", ["超市", "卖", "水果", "和", "牛奶"]],
+["If you like it, buy it.", "如果你喜欢，就买吧。", "Rúguǒ nǐ xǐhuan, jiù mǎi ba.", ["如果", "你", "喜欢", "就", "买", "吧"]],
+["The doctor went to the movie theater.", "医生去了电影院。", "Yīshēng qù le diànyǐngyuàn.", ["医生", "去", "了", "电影院"]],
+["I want to eat breakfast.", "我想吃早饭。", "Wǒ xiǎng chī zǎofàn.", ["我", "想", "吃", "早饭"]],
+["Although I'm busy, I'm happy.", "虽然我很忙，但是我很高兴。", "Suīrán wǒ hěn máng, dànshì wǒ hěn gāoxìng.", ["虽然", "我", "很", "忙", "但是", "我", "很", "高兴"]],
+["This place is especially pretty.", "这个地方特别漂亮。", "Zhè gè dìfang tèbié piàoliang.", ["这", "个", "地方", "特别", "漂亮"]],
+["Tigers are very fast.", "老虎很快。", "Lǎohǔ hěn kuài.", ["老虎", "很", "快"]],
+["He may be at home.", "他可能在家。", "Tā kěnéng zài jiā.", ["他", "可能", "在", "家"]],
+["Her cat is very cute.", "她的猫很可爱。", "Tā de māo hěn kě'ài.", ["她", "的", "猫", "很", "可爱"]],
+["My older brother likes juice.", "我的哥哥喜欢果汁。", "Wǒ de gēge xǐhuan guǒzhī.", ["我", "的", "哥哥", "喜欢", "果汁"]],
+["Her husband is a teacher.", "她的丈夫是老师。", "Tā de zhàngfu shì lǎoshī.", ["她", "的", "丈夫", "是", "老师"]],
+["It rained yesterday.", "昨天下雨了。", "Zuótiān xiàyǔ le.", ["昨天", "下雨", "了"]],
+["We like winter the most.", "我们最喜欢冬天。", "Wǒmen zuì xǐhuan dōngtiān.", ["我们", "最", "喜欢", "冬天"]],
+["Elephants are very big.", "大象很大。", "Dàxiàng hěn dà.", ["大象", "很", "大"]],
+["This website is very good.", "这个网站很好。", "Zhè gè wǎngzhàn hěn hǎo.", ["这", "个", "网站", "很", "好"]],
+["Does the nurse have a bicycle?", "护士有自行车吗？", "Hùshi yǒu zìxíngchē ma?", ["护士", "有", "自行车", "吗"]],
+["Next summer will be very hot.", "明年夏天会很热。", "Míngnián xiàtiān huì hěn rè.", ["明年", "夏天", "会", "很", "热"]],
+["His feet are very big.", "他的脚很大。", "Tā de jiǎo hěn dà.", ["他", "的", "脚", "很", "大"]],
+["She often drinks coffee.", "她常常喝咖啡。", "Tā chángcháng hē kāfēi.", ["她", "常常", "喝", "咖啡"]],
+["The manager doesn't want to drive a car.", "经理不想开汽车。", "Jīnglǐ bù xiǎng kāi qìchē.", ["经理", "不", "想", "开", "汽车"]],
+["Please wait for me for five minutes.", "请等我五分钟。", "Qǐng děng wǒ wǔ fēnzhōng.", ["请", "等", "我", "五", "分钟"]],
+["Although she's busy, she's happy.", "虽然她很忙，但是她很高兴。", "Suīrán tā hěn máng, dànshì tā hěn gāoxìng.", ["虽然", "她", "很", "忙", "但是", "她", "很", "高兴"]],
+["She runs with her friend.", "她和朋友一起跑步。", "Tā hé péngyou yìqǐ pǎobù.", ["她", "和", "朋友", "一起", "跑步"]],
+["What is your surname?", "你姓什么？", "Nǐ xìng shénme?", ["你", "姓", "什么"]],
+["Cows drink water.", "牛喝水。", "Niú hē shuǐ.", ["牛", "喝", "水"]],
+["Who wants to look at the map?", "谁想看地图？", "Shéi xiǎng kàn dìtú?", ["谁", "想", "看", "地图"]],
+["Is the doctor cold?", "医生冷吗？", "Yīshēng lěng ma?", ["医生", "冷", "吗"]],
+["He has a fever.", "他发烧了。", "Tā fāshāo le.", ["他", "发烧", "了"]],
+["If you don't know, ask me.", "如果你不知道，就问我。", "Rúguǒ nǐ bù zhīdào, jiù wèn wǒ.", ["如果", "你", "不", "知道", "就", "问", "我"]],
+["She can't dance.", "她不会跳舞。", "Tā bú huì tiàowǔ.", ["她", "不", "会", "跳舞"]],
+["You're welcome.", "不客气。", "Bú kèqi.", ["不客气"]],
+["He came out of the house.", "他从家里出来了。", "Tā cóng jiā lǐ chū lái le.", ["他", "从", "家", "里", "出", "来", "了"]],
+["She gives her younger sister an umbrella.", "她送妹妹一个雨伞。", "Tā sòng mèimei yí gè yǔsǎn.", ["她", "送", "妹妹", "一", "个", "雨伞"]],
+["The bank is in front of the supermarket.", "银行在超市前面。", "Yínháng zài chāoshì qiánmiàn.", ["银行", "在", "超市", "前面"]],
+["I saw him.", "我看见他了。", "Wǒ kànjiàn tā le.", ["我", "看见", "他", "了"]],
+["When does the driver rest?", "司机什么时候休息？", "Sījī shénme shíhou xiūxi?", ["司机", "什么", "时候", "休息"]],
+["Who wants to eat some pork?", "谁想吃猪肉？", "Shéi xiǎng chī zhūròu?", ["谁", "想", "吃", "猪肉"]],
+["I have class in the afternoon.", "我下午有课。", "Wǒ xiàwǔ yǒu kè.", ["我", "下午", "有", "课"]],
+["This place is extremely quiet.", "这个地方非常安静。", "Zhè gè dìfang fēicháng ānjìng.", ["这", "个", "地方", "非常", "安静"]],
+["The doctor can't dance.", "医生不会跳舞。", "Yīshēng bú huì tiàowǔ.", ["医生", "不", "会", "跳舞"]],
+["Where is the door?", "门在哪儿？", "Mén zài nǎr?", ["门", "在", "哪儿"]],
+["The student doesn't want to play a game.", "学生不想玩游戏。", "Xuésheng bù xiǎng wán yóuxì.", ["学生", "不", "想", "玩", "游戏"]],
+["Sheep are very cute.", "羊很可爱。", "Yáng hěn kě'ài.", ["羊", "很", "可爱"]],
+["This phone is yellow.", "这个手机是黄的。", "Zhè gè shǒujī shì huáng de.", ["这", "个", "手机", "是", "黄", "的"]],
+["What is your surname?", "您贵姓？", "Nín guì xìng?", ["您", "贵", "姓"]],
+["The moon is very pretty.", "月亮很漂亮。", "Yuèliang hěn piàoliang.", ["月亮", "很", "漂亮"]],
+["The student can't write characters.", "学生不会写字。", "Xuésheng bú huì xiě zì.", ["学生", "不", "会", "写", "字"]],
+["Ants are very small.", "蚂蚁很小。", "Mǎyi hěn xiǎo.", ["蚂蚁", "很", "小"]],
+["You are smarter than me.", "你比我聪明。", "Nǐ bǐ wǒ cōngming.", ["你", "比", "我", "聪明"]],
+["Is she going to the bank?", "她去银行吗？", "Tā qù yínháng ma?", ["她", "去", "银行", "吗"]],
+["She gives her friend a hat.", "她送朋友一个帽子。", "Tā sòng péngyou yí gè màozi.", ["她", "送", "朋友", "一", "个", "帽子"]],
+["Miss, please come in.", "小姐，请进。", "Xiǎojie, qǐng jìn.", ["小姐", "请", "进"]],
+["Whose bag is that?", "那是谁的包？", "Nà shì shéi de bāo?", ["那", "是", "谁", "的", "包"]]
+];
+
+let order = shuffle([...Array(data.length).keys()]);
+let pos = 0;
+let index = order[0];
+let chosen = [];
+let solved = new Set();
+let missed = new Set();
+let attempts = 0;
+let firstTry = 0;
+let reviewMode = false;
+let reviewList = [];
+let reviewPos = 0;
+let hadWrongTry = new Set();
+
+const el = id => document.getElementById(id);
+const current = () => data[index];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function render() {
+  chosen = [];
+  const s = current();
+  el("progress").textContent = reviewMode ? `Review ${reviewPos + 1} / ${reviewList.length}` : `Sentence ${pos + 1} / ${data.length}`;
+  el("english").textContent = s[0];
+  el("pinyin").textContent = el("pinyinToggle").checked ? s[2] : "";
+  el("feedback").replaceChildren();
+  renderAnswer();
+  renderBank();
+  updateStats();
+  el("check").disabled = solved.has(index);
+  el("clear").disabled = solved.has(index);
+}
+
+function renderAnswer() {
+  const area = el("answer");
+  area.replaceChildren();
+
+  if (!chosen.length) {
+    const hint = document.createElement("span");
+    hint.className = "placeholder";
+    hint.textContent = "Tap word tiles below to build your answer…";
+    area.append(hint);
+    return;
+  }
+
+  chosen.forEach((word, position) => {
+    const button = document.createElement("button");
+    button.className = "tile";
+    button.textContent = word;
+    button.title = "Tap to remove";
+    button.onclick = () => {
+      if (solved.has(index)) return;
+      chosen.splice(position, 1);
+      renderAnswer();
+      renderBank();
+    };
+    area.append(button);
+  });
+}
+
+function renderBank() {
+  const area = el("bank");
+  area.replaceChildren();
+
+  // Each tile has its own identity, so duplicate words work correctly.
+  const available = shuffle(current()[3].map((word, id) => ({word, id})));
+  const used = new Set();
+  chosen.forEach(word => {
+    const match = current()[3].findIndex((w, i) => w === word && !used.has(i));
+    if (match !== -1) used.add(match);
+  });
+
+  available.forEach(item => {
+    const button = document.createElement("button");
+    button.className = "tile";
+    button.textContent = item.word;
+    button.disabled = solved.has(index) || used.has(item.id);
+    button.onclick = () => {
+      if (solved.has(index)) return;
+      chosen.push(item.word);
+      renderAnswer();
+      renderBank();
+    };
+    area.append(button);
+  });
+}
+
+function feedback(message, kind) {
+  const box = document.createElement("div");
+  box.className = "feedback " + kind;
+  box.textContent = message;
+  el("feedback").replaceChildren(box);
+}
+
+function checkAnswer() {
+  if (solved.has(index)) return;
+  if (!chosen.length) {
+    feedback("Choose some word tiles first.", "bad");
+    return;
+  }
+
+  attempts++;
+  const correct = chosen.join("") === current()[3].join("");
+
+  if (correct) {
+    if (!hadWrongTry.has(index)) firstTry++;
+    solved.add(index);
+    missed.delete(index);
+    feedback("Correct! " + current()[1] + "  " + current()[2], "good");
+    el("check").disabled = true;
+    el("clear").disabled = true;
+  } else {
+    missed.add(index);
+    hadWrongTry.add(index);
+    feedback("Not quite. Try changing the word order.", "bad");
+  }
+  updateStats();
+}
+
+function updateStats() {
+  el("solved").textContent = solved.size;
+  el("accuracy").textContent = attempts ? Math.round(firstTry / attempts * 100) + "%" : "—";
+  el("attempts").textContent = attempts;
+  el("missed").textContent = missed.size;
+  el("review").textContent = `Review missed (${missed.size})`;
+}
+
+function nextSentence() {
+  if (reviewMode) {
+    if (!reviewList.length) {
+      feedback("No missed sentences to review. Keep practicing!", "good");
+      return;
+    }
+    reviewPos = (reviewPos + 1) % reviewList.length;
+    index = reviewList[reviewPos];
+  } else {
+    pos = (pos + 1) % data.length;
+    if (pos === 0) order = shuffle(order);
+    index = order[pos];
+  }
+  render();
+}
+
+el("check").onclick = checkAnswer;
+el("undo").onclick = () => {
+  if (!solved.has(index) && chosen.length) {
+    chosen.pop();
+    renderAnswer();
+    renderBank();
+  }
+};
+el("clear").onclick = () => {
+  if (!solved.has(index)) {
+    chosen = [];
+    renderAnswer();
+    renderBank();
+    el("feedback").replaceChildren();
+  }
+};
+el("hint").onclick = () => {
+  if (solved.has(index)) return;
+  const nextWord = current()[3][chosen.length];
+  feedback(nextWord ? "Next word: " + nextWord : "All words are placed. Check your answer.", "good");
+};
+if ("speechSynthesis" in window) el("speak").hidden = false;
+el("speak").onclick = () => {
+  try {
+    const u = new SpeechSynthesisUtterance(current()[1]);
+    u.lang = "zh-CN";
+    u.rate = 0.8;
+    const v = speechSynthesis.getVoices().find(v => /^zh/i.test(v.lang));
+    if (v) u.voice = v;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch (e) {
+    feedback("Sound isn't available in this browser.", "bad");
+  }
+};
+el("next").onclick = nextSentence;
+el("pinyinToggle").onchange = () => {
+  el("pinyin").textContent = el("pinyinToggle").checked ? current()[2] : "";
+};
+el("review").onclick = () => {
+  if (!missed.size) {
+    feedback("No missed sentences yet — keep practicing!", "good");
+    return;
+  }
+  reviewMode = true;
+  reviewList = [...missed];
+  reviewPos = 0;
+  index = reviewList[0];
+  el("mode").textContent = "Practice mode · Review missed";
+  render();
+};
+el("all").onclick = () => {
+  reviewMode = false;
+  reviewList = [];
+  order = shuffle(order);
+  pos = 0;
+  index = order[0];
+  el("mode").textContent = "Practice mode · All sentences";
+  render();
+};
+
+// confirm() is blocked in the viewer, so Reset asks for a second tap instead.
+let resetTimer = null;
+function disarmReset() {
+  clearTimeout(resetTimer);
+  resetTimer = null;
+  el("reset").textContent = "Reset score";
+  el("reset").classList.remove("danger");
+}
+el("reset").onclick = () => {
+  if (!resetTimer) {
+    el("reset").textContent = "Tap again to confirm";
+    el("reset").classList.add("danger");
+    resetTimer = setTimeout(disarmReset, 4000);
+    return;
+  }
+  disarmReset();
+  order = shuffle(order);
+  pos = 0;
+  index = order[0];
+  chosen = [];
+  solved.clear();
+  missed.clear();
+  hadWrongTry.clear();
+  attempts = 0;
+  firstTry = 0;
+  reviewMode = false;
+  reviewList = [];
+  el("mode").textContent = "Practice mode · All sentences";
+  render();
+};
+
+render();
+</script>
+
+</body></html>

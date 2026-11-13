@@ -1,0 +1,105 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Hanzi Flip Tiles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap">
+<style>
+/* Layout: sticky slim header over a responsive grid of square tiles; each tile is one button that cycles hanzi, meaning, pinyin. */
+:root{
+  --bg:#e9edf1; --tile:#fbfcfd; --ink:#1b2430; --muted:#5d6b7b; --line:#cfd7e0;
+  --def-bg:#1f6f78; --def-ink:#f2fbfb;
+  --py-bg:#3a3f8f; --py-ink:#f3f3ff;
+  --focus:#d9822b;
+  --font-han:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --font-ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --tile:#1c242d; --ink:#e8edf2; --muted:#93a1b1; --line:#2c3743;
+  --def-bg:#2a8c97; --def-ink:#06191b;
+  --py-bg:#8b90ec; --py-ink:#10123a;
+  --focus:#f0a65a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --tile:#1c242d; --ink:#e8edf2; --muted:#93a1b1; --line:#2c3743;
+  --def-bg:#2a8c97; --def-ink:#06191b;
+  --py-bg:#8b90ec; --py-ink:#10123a;
+  --focus:#f0a65a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:14px 12px;border-bottom:1px solid var(--line);margin-bottom:16px}
+h1{font-family:var(--font-han);font-size:1.35rem;font-weight:700;margin:0;line-height:1.2}
+.sub{color:var(--muted);font-size:.8rem;margin-top:2px}
+.tools{display:flex;gap:8px}
+.tools button{font:500 .85rem var(--font-ui);color:var(--ink);background:var(--tile);border:1px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer;min-height:38px}
+.tools button:hover{border-color:var(--muted)}
+.tools button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;max-width:1100px;margin:0 auto}
+.tile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--tile);color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;font-family:var(--font-ui)}
+.tile .t{display:block;max-width:100%;overflow-wrap:anywhere;line-height:1.15}
+.tile[data-s="0"] .t{font-family:var(--font-han);font-weight:500;font-size:2.6rem}
+.tile[data-s="1"]{background:var(--def-bg);color:var(--def-ink);border-color:var(--def-bg)}
+.tile[data-s="1"] .t{font-weight:600;font-size:1rem}
+.tile[data-s="2"]{background:var(--py-bg);color:var(--py-ink);border-color:var(--py-bg)}
+.tile[data-s="2"] .t{font-weight:500;font-size:1.4rem}
+.tile:focus-visible,.tools button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.hint{color:var(--muted);font-size:.8rem;max-width:1100px;margin:18px auto 0;text-align:center}
+</style>
+<header>
+  <div>
+    <h1>汉字 Hanzi Flip Tiles</h1>
+    <div class="sub" id="count">499 characters. Tap: meaning, tap: pinyin, tap: back.</div>
+  </div>
+  <div class="tools">
+    <button type="button" id="shuffle">Shuffle</button>
+    <button type="button" id="reset">Reset</button>
+  </div>
+</header>
+<main class="grid" id="grid"></main>
+<p class="hint">Meanings are one-word best guesses and pinyin is the most common reading.</p>
+<script>
+const DATA = [["一", "one", "yī"], ["七", "seven", "qī"], ["丈", "husband", "zhàng"], ["三", "three", "sān"], ["上", "up", "shàng"], ["下", "down", "xià"], ["不", "not", "bù"], ["东", "east", "dōng"], ["两", "two", "liǎng"], ["个", "piece", "gè"], ["中", "middle", "zhōng"], ["为", "for", "wèi"], ["么", "what", "me"], ["乌", "crow", "wū"], ["乐", "happy", "lè"], ["九", "nine", "jiǔ"], ["也", "also", "yě"], ["习", "practice", "xí"], ["书", "book", "shū"], ["买", "buy", "mǎi"], ["了", "(done)", "le"], ["事", "matter", "shì"], ["二", "two", "èr"], ["五", "five", "wǔ"], ["些", "some", "xiē"], ["京", "capital", "jīng"], ["亮", "bright", "liàng"], ["人", "person", "rén"], ["什", "what", "shén"], ["今", "today", "jīn"], ["介", "introduce", "jiè"], ["从", "from", "cóng"], ["他", "he", "tā"], ["以", "with", "yǐ"], ["们", "(plural)", "men"], ["件", "item", "jiàn"], ["休", "rest", "xiū"], ["会", "can", "huì"], ["伞", "umbrella", "sǎn"], ["但", "but", "dàn"], ["住", "live", "zhù"], ["体", "body", "tǐ"], ["作", "do", "zuò"], ["你", "you", "nǐ"], ["便", "convenient", "biàn"], ["信", "letter", "xìn"], ["候", "wait", "hòu"], ["做", "do", "zuò"], ["儿", "child", "ér"], ["先", "first", "xiān"], ["兔", "rabbit", "tù"], ["八", "eight", "bā"], ["公", "public", "gōng"], ["六", "six", "liù"], ["共", "together", "gòng"], ["关", "close", "guān"], ["兴", "excited", "xìng"], ["再", "again", "zài"], ["冒", "emit", "mào"], ["写", "write", "xiě"], ["冬", "winter", "dōng"], ["冰", "ice", "bīng"], ["冷", "cold", "lěng"], ["净", "clean", "jìng"], ["准", "accurate", "zhǔn"], ["几", "several", "jǐ"], ["出", "out", "chū"], ["分", "minute", "fēn"], ["别", "don't", "bié"], ["到", "arrive", "dào"], ["前", "front", "qián"], ["务", "business", "wù"], ["动", "move", "dòng"], ["助", "help", "zhù"], ["包", "bag", "bāo"], ["北", "north", "běi"], ["匙", "spoon", "chí"], ["医", "doctor", "yī"], ["十", "ten", "shí"], ["千", "thousand", "qiān"], ["午", "noon", "wǔ"], ["卖", "sell", "mài"], ["南", "south", "nán"], ["卧", "lie", "wò"], ["厅", "hall", "tīng"], ["厕", "toilet", "cè"], ["厨", "kitchen", "chú"], ["去", "go", "qù"], ["友", "friend", "yǒu"], ["发", "send", "fā"], ["叔", "uncle", "shū"], ["叫", "call", "jiào"], ["可", "can", "kě"], ["右", "right", "yòu"], ["号", "number", "hào"], ["司", "manage", "sī"], ["吃", "eat", "chī"], ["同", "same", "tóng"], ["名", "name", "míng"], ["后", "after", "hòu"], ["吗", "(question)", "ma"], ["吧", "(suggest)", "ba"], ["听", "listen", "tīng"], ["告", "tell", "gào"], ["员", "member", "yuán"], ["呢", "(particle)", "ne"], ["周", "week", "zhōu"], ["和", "and", "hé"], ["咖", "coffee", "kā"], ["哥", "brother", "gē"], ["哪", "which", "nǎ"], ["唱", "sing", "chàng"], ["商", "business", "shāng"], ["啡", "coffee", "fēi"], ["啤", "beer", "pí"], ["喂", "hello", "wèi"], ["喜", "like", "xǐ"], ["喝", "drink", "hē"], ["嘴", "mouth", "zuǐ"], ["四", "four", "sì"], ["回", "return", "huí"], ["因", "because", "yīn"], ["园", "garden", "yuán"], ["国", "country", "guó"], ["图", "picture", "tú"], ["在", "at", "zài"], ["地", "ground", "dì"], ["场", "field", "chǎng"], ["坐", "sit", "zuò"], ["块", "piece", "kuài"], ["城", "city", "chéng"], ["士", "scholar", "shì"], ["备", "prepare", "bèi"], ["夏", "summer", "xià"], ["外", "outside", "wài"], ["多", "many", "duō"], ["大", "big", "dà"], ["天", "day", "tiān"], ["太", "too", "tài"], ["夫", "husband", "fū"], ["头", "head", "tóu"], ["女", "female", "nǚ"], ["奶", "milk", "nǎi"], ["她", "she", "tā"], ["好", "good", "hǎo"], ["如", "like", "rú"], ["妈", "mom", "mā"], ["妹", "sister", "mèi"], ["妻", "wife", "qī"], ["始", "begin", "shǐ"], ["姐", "sister", "jiě"], ["姓", "surname", "xìng"], ["婆", "grandma", "pó"], ["婴", "infant", "yīng"], ["子", "child", "zǐ"], ["字", "character", "zì"], ["学", "study", "xué"], ["孩", "child", "hái"], ["它", "it", "tā"], ["安", "safe", "ān"], ["完", "finish", "wán"], ["宜", "suitable", "yí"], ["客", "guest", "kè"], ["室", "room", "shì"], ["家", "home", "jiā"], ["容", "contain", "róng"], ["察", "observe", "chá"], ["对", "correct", "duì"], ["小", "small", "xiǎo"], ["少", "few", "shǎo"], ["就", "then", "jiù"], ["居", "reside", "jū"], ["山", "mountain", "shān"], ["岁", "age", "suì"], ["工", "work", "gōng"], ["左", "left", "zuǒ"], ["己", "self", "jǐ"], ["已", "already", "yǐ"], ["市", "market", "shì"], ["师", "teacher", "shī"], ["希", "hope", "xī"], ["帮", "help", "bāng"], ["常", "often", "cháng"], ["帽", "hat", "mào"], ["干", "dry", "gān"], ["年", "year", "nián"], ["床", "bed", "chuáng"], ["店", "shop", "diàn"], ["开", "open", "kāi"], ["弟", "brother", "dì"], ["影", "shadow", "yǐng"], ["往", "toward", "wǎng"], ["很", "very", "hěn"], ["得", "get", "de"], ["微", "tiny", "wēi"], ["心", "heart", "xīn"], ["忙", "busy", "máng"], ["快", "fast", "kuài"], ["怎", "how", "zěn"], ["思", "think", "sī"], ["息", "breathe", "xī"], ["您", "you", "nín"], ["情", "feeling", "qíng"], ["惯", "accustomed", "guàn"], ["想", "want", "xiǎng"], ["意", "meaning", "yì"], ["感", "feel", "gǎn"], ["慢", "slow", "màn"], ["懂", "understand", "dǒng"], ["戏", "play", "xì"], ["我", "I", "wǒ"], ["或", "or", "huò"], ["户", "household", "hù"], ["房", "house", "fáng"], ["所", "place", "suǒ"], ["手", "hand", "shǒu"], ["打", "hit", "dǎ"], ["找", "search", "zhǎo"], ["护", "protect", "hù"], ["报", "report", "bào"], ["故", "reason", "gù"], ["教", "teach", "jiào"], ["新", "new", "xīn"], ["方", "square", "fāng"], ["旁", "side", "páng"], ["旅", "travel", "lǚ"], ["日", "sun", "rì"], ["早", "early", "zǎo"], ["时", "time", "shí"], ["明", "bright", "míng"], ["易", "easy", "yì"], ["星", "star", "xīng"], ["春", "spring", "chūn"], ["昨", "yesterday", "zuó"], ["是", "is", "shì"], ["晚", "evening", "wǎn"], ["晴", "sunny", "qíng"], ["最", "most", "zuì"], ["月", "moon", "yuè"], ["有", "have", "yǒu"], ["朋", "friend", "péng"], ["服", "clothes", "fú"], ["望", "gaze", "wàng"], ["期", "period", "qī"], ["末", "end", "mò"], ["本", "root", "běn"], ["朵", "flower", "duǒ"], ["机", "machine", "jī"], ["李", "plum", "lǐ"], ["条", "strip", "tiáo"], ["来", "come", "lái"], ["杯", "cup", "bēi"], ["果", "fruit", "guǒ"], ["柿", "persimmon", "shì"], ["树", "tree", "shù"], ["校", "school", "xiào"], ["样", "kind", "yàng"], ["桌", "table", "zhuō"], ["梯", "ladder", "tī"], ["棕", "brown", "zōng"], ["椅", "chair", "yǐ"], ["楼", "building", "lóu"], ["橙", "orange", "chéng"], ["次", "time", "cì"], ["欢", "joy", "huān"], ["歌", "song", "gē"], ["正", "correct", "zhèng"], ["步", "step", "bù"], ["母", "mother", "mǔ"], ["每", "every", "měi"], ["比", "compare", "bǐ"], ["气", "air", "qì"], ["水", "water", "shuǐ"], ["汁", "juice", "zhī"], ["汉", "Chinese", "hàn"], ["汤", "soup", "tāng"], ["汽", "steam", "qì"], ["没", "not", "méi"], ["泳", "swim", "yǒng"], ["洗", "wash", "xǐ"], ["活", "live", "huó"], ["海", "sea", "hǎi"], ["渴", "thirsty", "kě"], ["游", "swim", "yóu"], ["漂", "float", "piào"], ["火", "fire", "huǒ"], ["灰", "gray", "huī"], ["点", "dot", "diǎn"], ["烧", "burn", "shāo"], ["热", "hot", "rè"], ["然", "so", "rán"], ["照", "shine", "zhào"], ["熊", "bear", "xióng"], ["爱", "love", "ài"], ["父", "father", "fù"], ["爷", "grandpa", "yé"], ["爸", "dad", "bà"], ["片", "slice", "piàn"], ["牛", "cow", "niú"], ["物", "thing", "wù"], ["特", "special", "tè"], ["狗", "dog", "gǒu"], ["狮", "lion", "shī"], ["狼", "wolf", "láng"], ["猪", "pig", "zhū"], ["猫", "cat", "māo"], ["猴", "monkey", "hóu"], ["玩", "play", "wán"], ["现", "now", "xiàn"], ["班", "class", "bān"], ["球", "ball", "qiú"], ["理", "reason", "lǐ"], ["瓜", "melon", "guā"], ["甜", "sweet", "tián"], ["生", "born", "shēng"], ["电", "electricity", "diàn"], ["男", "male", "nán"], ["病", "sick", "bìng"], ["白", "white", "bái"], ["百", "hundred", "bǎi"], ["的", "(of)", "de"], ["盐", "salt", "yán"], ["直", "straight", "zhí"], ["看", "look", "kàn"], ["真", "real", "zhēn"], ["眼", "eye", "yǎn"], ["着", "(ongoing)", "zhe"], ["睛", "eye", "jīng"], ["睡", "sleep", "shuì"], ["知", "know", "zhī"], ["碗", "bowl", "wǎn"], ["礼", "gift", "lǐ"], ["票", "ticket", "piào"], ["离", "leave", "lí"], ["秋", "autumn", "qiū"], ["租", "rent", "zū"], ["穿", "wear", "chuān"], ["窗", "window", "chuāng"], ["站", "stand", "zhàn"], ["笑", "laugh", "xiào"], ["笔", "pen", "bǐ"], ["第", "(ordinal)", "dì"], ["等", "wait", "děng"], ["答", "answer", "dá"], ["筷", "chopsticks", "kuài"], ["箱", "box", "xiāng"], ["篮", "basket", "lán"], ["米", "rice", "mǐ"], ["粉", "powder", "fěn"], ["糕", "cake", "gāo"], ["糖", "sugar", "táng"], ["系", "tie", "xì"], ["紫", "purple", "zǐ"], ["累", "tired", "lèi"], ["红", "red", "hóng"], ["纸", "paper", "zhǐ"], ["绍", "continue", "shào"], ["经", "pass", "jīng"], ["给", "give", "gěi"], ["绿", "green", "lǜ"], ["网", "net", "wǎng"], ["羊", "sheep", "yáng"], ["美", "beautiful", "měi"], ["老", "old", "lǎo"], ["考", "test", "kǎo"], ["者", "person", "zhě"], ["而", "and", "ér"], ["耳", "ear", "ěr"], ["聪", "smart", "cōng"], ["肉", "meat", "ròu"], ["肚", "belly", "dù"], ["能", "can", "néng"], ["脏", "dirty", "zāng"], ["脑", "brain", "nǎo"], ["脚", "foot", "jiǎo"], ["脸", "face", "liǎn"], ["腿", "leg", "tuǐ"], ["自", "self", "zì"], ["舞", "dance", "wǔ"], ["色", "color", "sè"], ["花", "flower", "huā"], ["英", "England", "yīng"], ["苹", "apple", "píng"], ["茶", "tea", "chá"], ["药", "medicine", "yào"], ["菜", "dish", "cài"], ["蓝", "blue", "lán"], ["蕉", "banana", "jiāo"], ["虎", "tiger", "hǔ"], ["虽", "although", "suī"], ["蚁", "ant", "yǐ"], ["蚂", "ant", "mǎ"], ["蛇", "snake", "shé"], ["蛋", "egg", "dàn"], ["蛙", "frog", "wā"], ["蝴", "butterfly", "hú"], ["蝶", "butterfly", "dié"], ["行", "walk", "xíng"], ["衣", "clothes", "yī"], ["表", "watch", "biǎo"], ["裙", "skirt", "qún"], ["裤", "pants", "kù"], ["西", "west", "xī"], ["要", "want", "yào"], ["见", "see", "jiàn"], ["视", "look", "shì"], ["觉", "feel", "jué"], ["警", "warn", "jǐng"], ["认", "recognize", "rèn"], ["让", "let", "ràng"], ["识", "know", "shí"], ["诉", "tell", "sù"], ["试", "try", "shì"], ["话", "speech", "huà"], ["语", "language", "yǔ"], ["说", "speak", "shuō"], ["请", "please", "qǐng"], ["读", "read", "dú"], ["课", "lesson", "kè"], ["谁", "who", "shéi"], ["谢", "thank", "xiè"], ["象", "elephant", "xiàng"], ["贵", "expensive", "guì"], ["走", "walk", "zǒu"], ["起", "rise", "qǐ"], ["超", "exceed", "chāo"], ["足", "foot", "zú"], ["跑", "run", "pǎo"], ["路", "road", "lù"], ["跳", "jump", "tiào"], ["踢", "kick", "tī"], ["身", "body", "shēn"], ["车", "vehicle", "chē"], ["辣", "spicy", "là"], ["边", "side", "biān"], ["过", "pass", "guò"], ["迎", "welcome", "yíng"], ["运", "transport", "yùn"], ["近", "near", "jìn"], ["还", "still", "hái"], ["这", "this", "zhè"], ["进", "enter", "jìn"], ["远", "far", "yuǎn"], ["送", "send", "sòng"], ["道", "way", "dào"], ["那", "that", "nà"], ["邻", "neighbor", "lín"], ["都", "all", "dōu"], ["酒", "liquor", "jiǔ"], ["里", "inside", "lǐ"], ["重", "heavy", "zhòng"], ["钟", "clock", "zhōng"], ["钥", "key", "yào"], ["钱", "money", "qián"], ["铁", "iron", "tiě"], ["铅", "lead", "qiān"], ["银", "silver", "yín"], ["错", "wrong", "cuò"], ["镜", "mirror", "jìng"], ["长", "long", "cháng"], ["门", "door", "mén"], ["问", "ask", "wèn"], ["间", "between", "jiān"], ["阳", "sun", "yáng"], ["阴", "cloudy", "yīn"], ["院", "courtyard", "yuàn"], ["难", "difficult", "nán"], ["雨", "rain", "yǔ"], ["雪", "snow", "xuě"], ["零", "zero", "líng"], ["青", "cyan", "qīng"], ["静", "quiet", "jìng"], ["非", "not", "fēi"], ["面", "face", "miàn"], ["鞋", "shoe", "xié"], ["音", "sound", "yīn"], ["题", "topic", "tí"], ["颜", "color", "yán"], ["风", "wind", "fēng"], ["飞", "fly", "fēi"], ["饭", "meal", "fàn"], ["饱", "full", "bǎo"], ["饺", "dumpling", "jiǎo"], ["饿", "hungry", "è"], ["馆", "hall", "guǎn"], ["香", "fragrant", "xiāng"], ["马", "horse", "mǎ"], ["高", "tall", "gāo"], ["鱼", "fish", "yú"], ["鲜", "fresh", "xiān"], ["鸟", "bird", "niǎo"], ["鸡", "chicken", "jī"], ["鸭", "duck", "yā"], ["黄", "yellow", "huáng"], ["黑", "black", "hēi"], ["鼠", "mouse", "shǔ"], ["鼻", "nose", "bí"], ["龙", "dragon", "lóng"], ["龟", "turtle", "guī"]];
+const grid = document.getElementById('grid');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let order = DATA.map((_, i) => i);
+const state = new Array(DATA.length).fill(0);
+
+function text(i){ const d = DATA[i]; return state[i] === 0 ? d[0] : state[i] === 1 ? d[1] : d[2]; }
+function label(i){ const d = DATA[i]; return state[i] === 0 ? 'Character ' + d[0] + '. Tap for meaning.' : state[i] === 1 ? d[0] + ' means ' + d[1] + '. Tap for pinyin.' : d[0] + ' is read ' + d[2] + '. Tap to return to the character.'; }
+function paint(btn){
+  const i = +btn.dataset.i;
+  btn.dataset.s = state[i];
+  btn.firstChild.textContent = text(i);
+  btn.setAttribute('aria-label', label(i));
+}
+function build(){
+  const frag = document.createDocumentFragment();
+  order.forEach(i => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tile'; b.dataset.i = i;
+    const t = document.createElement('span'); t.className = 't'; b.appendChild(t);
+    paint(b); frag.appendChild(b);
+  });
+  grid.replaceChildren(frag);
+}
+grid.addEventListener('click', e => {
+  const btn = e.target.closest('.tile'); if (!btn) return;
+  const i = +btn.dataset.i;
+  state[i] = (state[i] + 1) % 3;
+  if (reduce || !btn.animate) { paint(btn); return; }
+  if (btn._busy) { return; }
+  btn._busy = true;
+  btn.animate([{transform:'perspective(500px) rotateY(0deg)'},{transform:'perspective(500px) rotateY(90deg)'}],{duration:120,easing:'ease-in',fill:'forwards'}).finished
+    .then(() => { paint(btn); return btn.animate([{transform:'perspective(500px) rotateY(-90deg)'},{transform:'perspective(500px) rotateY(0deg)'}],{duration:120,easing:'ease-out'}).finished; })
+    .catch(() => {})
+    .then(() => { btn.getAnimations().forEach(a => a.cancel()); paint(btn); btn._busy = false; });
+});
+document.getElementById('shuffle').addEventListener('click', () => {
+  for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
+  state.fill(0); build(); window.scrollTo(0, 0);
+});
+document.getElementById('reset').addEventListener('click', () => {
+  order = DATA.map((_, i) => i); state.fill(0); build(); window.scrollTo(0, 0);
+});
+document.getElementById('count').textContent = DATA.length + ' characters. Tap: meaning, tap: pinyin, tap: back.';
+build();
+</script>
+
+</body></html>
